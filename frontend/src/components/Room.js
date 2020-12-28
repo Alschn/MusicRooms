@@ -12,11 +12,12 @@ export class Room extends Component {
       showSettings: false,
     };
     this.roomCode = this.props.match.params.roomCode; // react router
-    this.getRoomDetails();
     this.leaveButtonPressed = this.leaveButtonPressed.bind(this);
     this.updateShowSettings = this.updateShowSettings.bind(this);
     this.renderSettingsButton = this.renderSettingsButton.bind(this);
     this.renderSettings = this.renderSettings.bind(this);
+    this.getRoomDetails = this.getRoomDetails.bind(this);
+    this.getRoomDetails();
   }
 
   getRoomDetails() {
@@ -63,7 +64,7 @@ export class Room extends Component {
             votesToSkip={this.state.votesToSkip}
             guestCanPause={this.state.guestCanPause}
             roomCode={this.roomCode}
-            updateCallback={() => {}} // because we cannot assign a non-empty expression to JSX
+            updateCallback={this.getRoomDetails} // because we cannot assign a non-empty expression to JSX
           />
         </Grid>
 
@@ -100,7 +101,7 @@ export class Room extends Component {
       return this.renderSettings();
     }
     return (
-      <Grid contaienr spacing={1}>
+      <Grid container spacing={1}>
         <Grid item xs={12} align="center">
           <Typography variant="h4" component="h4">
             Code: {this.roomCode}
@@ -109,7 +110,7 @@ export class Room extends Component {
 
         <Grid item xs={12} align="center">
           <Typography variant="h4" component="h4">
-            Votes: {this.votesToSkip}
+            Votes: {this.state.votesToSkip}
           </Typography>
         </Grid>
 
