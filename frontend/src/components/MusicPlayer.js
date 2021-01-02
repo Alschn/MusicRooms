@@ -8,11 +8,27 @@ import {
 } from "@material-ui/core";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import SkipNextIcon from "@material-ui/icons/SkipNext";
-import PuaseIcon from "@material-ui/icons/Pause";
+import PauseIcon from "@material-ui/icons/Pause";
 
 export default class MusicPlayer extends Component {
   constructor(props) {
     super(props);
+  }
+
+  pauseSong() {
+    const requestOptions = {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+    };
+    fetch("/spotify/pause", requestOptions);
+  }
+
+  playSong() {
+    const requestOptions = {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+    };
+    fetch("/spotify/play", requestOptions);
   }
 
   render() {
@@ -35,8 +51,12 @@ export default class MusicPlayer extends Component {
             </Typography>
 
             <div>
-              <IconButton>
-                {this.props.is_playing ? <PuaseIcon /> : <PlayArrowIcon />}
+              <IconButton
+                onClick={() =>
+                  this.props.is_playing ? this.pauseSong() : this.playSong()
+                }
+              >
+                {this.props.is_playing ? <PauseIcon /> : <PlayArrowIcon />}
               </IconButton>
               <IconButton>
                 <SkipNextIcon />
