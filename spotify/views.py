@@ -17,7 +17,7 @@ from api.models import Room
 
 class AuthURL(APIView):
     def get(self, request, format=None):
-        scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing'
+        scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing streaming user-read-email user-read-private'
 
         url = Request('GET', 'https://accounts.spotify.com/authorize', params={
             'scope': scopes,
@@ -175,3 +175,46 @@ class SkipSong(APIView):
             vote = Vote(user=self.request.session.session_key, room=room, song_id=room.current_song)
             vote.save()
             return Response({'Message': 'Added skip vote'}, status.HTTP_204_NO_CONTENT)
+
+
+class CurrentUser(APIView):
+    def get(self, request, format=None):
+        user = self.request.session.session_key
+        if is_spotify_authenticated(user):
+            # call basic url "https://api.spotify.com/v1/me/"
+            endpoint = ""
+            response = execute_spotify_api_call(user, endpoint)
+
+            if 'error' in response or 'id' not in response:
+                return Response(response, status=status.HTTP_204_NO_CONTENT)
+
+            country = response.get('country')
+            username = response.get('display_name')
+            email = response.get('email')
+            followers_count = response.get('followers').get('total')
+            url = response.get('href')
+            id = response.get('id')
+            image = response.get('images')
+            if image:
+                image_url = image[0].get('url')
+            else:
+                image_url = None
+            product = response.get('type')
+
+            formated_response = {
+                "id": id,
+                "user": username,
+                "email": email,
+                "country": country,
+                "followers": followers_count,
+                "url": url,
+                "image_url": image_url,
+                "acc_type": product
+            }
+
+            return Response(formated_response, status=status.HTTP_200_OK)
+
+        return Response(
+            {"Message": "Current user is not authenticated with Spotify"},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
