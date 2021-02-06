@@ -1,10 +1,9 @@
 from django.http.response import JsonResponse
-from django.shortcuts import render
 from rest_framework import generics, status
-from .models import Room
-from .serializers import RoomSerializer, CreateRoomSerializer, UpdateRoomSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from .models import Room
+from .serializers import RoomSerializer, CreateRoomSerializer, UpdateRoomSerializer
 
 
 class RoomView(generics.ListAPIView):
@@ -119,7 +118,7 @@ class UpdateRoom(APIView):
             queryset = Room.objects.filter(code=code)
             if not queryset.exists():
                 return Response({'Message': 'Room not found,'}, status=status.HTTP_404_NOT_FOUND)
-            
+
             room = queryset[0]
             user_id = self.request.session.session_key
             if room.host != user_id:
