@@ -9,6 +9,13 @@ import {
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import SkipNextIcon from "@material-ui/icons/SkipNext";
 import PauseIcon from "@material-ui/icons/Pause";
+import getCookie from "../utils/Utils";
+
+const csrftoken = getCookie("csrftoken");
+const headers = {
+  "Content-Type": "application/json",
+  "X-CSRFToken": csrftoken,
+};
 
 export default class MusicPlayer extends Component {
   constructor(props) {
@@ -18,7 +25,7 @@ export default class MusicPlayer extends Component {
   skipSong() {
     const requestOptions = {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: headers,
     };
     fetch("/spotify/skip", requestOptions);
   }
@@ -26,7 +33,7 @@ export default class MusicPlayer extends Component {
   pauseSong() {
     const requestOptions = {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: headers,
     };
     fetch("/spotify/pause", requestOptions);
   }
@@ -34,7 +41,7 @@ export default class MusicPlayer extends Component {
   playSong() {
     const requestOptions = {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: headers,
     };
     fetch("/spotify/play", requestOptions);
   }

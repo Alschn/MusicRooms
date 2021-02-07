@@ -2,6 +2,9 @@ import React, { Component } from "react";
 import { Grid, Button, Typography } from "@material-ui/core";
 import CreateRoomPage from "./CreateRoomPage";
 import MusicPlayer from "./MusicPlayer";
+import getCookie from "../utils/Utils";
+
+const csrftoken = getCookie("csrftoken");
 
 export class Room extends Component {
   constructor(props) {
@@ -93,7 +96,7 @@ export class Room extends Component {
           isHost: data.is_host,
         });
         if (this.state.isHost) {
-          this.authenticateSpotify();
+          // this.authenticateSpotify();
         }
       });
   }
@@ -127,7 +130,7 @@ export class Room extends Component {
   leaveButtonPressed() {
     const requestOptions = {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
     };
     fetch("/api/leave-room", requestOptions).then((_response) => {
       this.props.leaveRoomCallback();

@@ -11,6 +11,9 @@ import RadioGroup from "@material-ui/core/RadioGroup";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import { Collapse } from "@material-ui/core";
 import Alert from "@material-ui/lab/Alert";
+import getCookie from "../utils/Utils";
+
+const csrftoken = getCookie("csrftoken");
 
 export class CreateRoomPage extends Component {
   static defaultProps = {
@@ -55,7 +58,7 @@ export class CreateRoomPage extends Component {
   handleRoomButtonPressed() {
     const requestOptions = {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
       body: JSON.stringify({
         votes_to_skip: this.state.votesToSkip,
         guest_can_pause: this.state.guestCanPause,
@@ -63,7 +66,10 @@ export class CreateRoomPage extends Component {
     };
 
     fetch("/api/create-room", requestOptions)
-      .then((response) => response.json())
+      .then((response) => {
+        console.log(response);
+        return response.json();
+      })
       .then((data) => {
         this.props.history.push("/room/" + data.code);
       });
@@ -72,7 +78,7 @@ export class CreateRoomPage extends Component {
   handleUpdateButtonPressed() {
     const requestOptions = {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
       body: JSON.stringify({
         votes_to_skip: this.state.votesToSkip,
         guest_can_pause: this.state.guestCanPause,
