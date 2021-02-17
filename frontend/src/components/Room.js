@@ -2,6 +2,9 @@ import React, { Component } from "react";
 import { Grid, Button, Typography } from "@material-ui/core";
 import CreateRoomPage from "./CreateRoomPage";
 import MusicPlayer from "./MusicPlayer";
+import getCookie from "../utils/Utils";
+
+const csrftoken = getCookie("csrftoken");
 
 export class Room extends Component {
   constructor(props) {
@@ -26,11 +29,55 @@ export class Room extends Component {
   }
 
   componentDidMount() {
-    this.interval = setInterval(this.getCurrentSong, 1000);
+    // if (window.Spotify == null) {
+    //   const script = document.createElement("script");
+    //   script.src = "https://sdk.scdn.co/spotify-player.js";
+    //   script.async = true;
+    //   document.body.appendChild(script);
+    //   window.onSpotifyWebPlaybackSDKReady = () => {
+    //     window.Spotify = Spotify;
+    //     const token =
+    //       "BQDcyZ2z6i8zhUv2Cyd05W5lcanjyN4BPnpfLCboAbdCEd2vYp0unQgob_6n7qpPFbJMpE7gsptk1b7YDq8LEon1LN-BpwXzBQSfPuXly_iXTiXkoQUg_J9sBEgmTkZXT2u7mXehg8MuWh6Wl1x85WxdSbF1gAQ4Ljs";
+    //     const player = new Spotify.Player({
+    //       name: "Web Playback SDK Quick Start Player",
+    //       getOAuthToken: (cb) => {
+    //         cb(token);
+    //       },
+    //     });
+    //     // Error handling
+    //     player.addListener("initialization_error", ({ message }) => {
+    //       console.error(message);
+    //     });
+    //     player.addListener("authentication_error", ({ message }) => {
+    //       console.error(message);
+    //     });
+    //     player.addListener("account_error", ({ message }) => {
+    //       console.error(message);
+    //     });
+    //     player.addListener("playback_error", ({ message }) => {
+    //       console.error(message);
+    //     });
+    //     // Playback status updates
+    //     player.addListener("player_state_changed", (state) => {
+    //       console.log(state);
+    //     });
+    //     // Ready
+    //     player.addListener("ready", ({ device_id }) => {
+    //       console.log("Ready with Device ID", device_id);
+    //     });
+    //     // Not Ready
+    //     player.addListener("not_ready", ({ device_id }) => {
+    //       console.log("Device ID has gone offline", device_id);
+    //     });
+    //     // Connect to the player!
+    //     player.connect();
+    //   };
+    // }
+    this.interval = setInterval(this.getCurrentSong, 5000);
   }
 
   componentWillUnmount() {
-    clearInterval(this.interval); // stop the interval
+    clearInterval(this.interval);
   }
 
   getRoomDetails() {
@@ -49,7 +96,7 @@ export class Room extends Component {
           isHost: data.is_host,
         });
         if (this.state.isHost) {
-          this.authenticateSpotify();
+          // this.authenticateSpotify();
         }
       });
   }
@@ -73,7 +120,7 @@ export class Room extends Component {
     fetch("/spotify/current-song")
       .then((response) => {
         if (!response.ok) {
-          return {};
+          return { "Response Error": "Could not play the song!" };
         }
         return response.json();
       })
@@ -83,7 +130,7 @@ export class Room extends Component {
   leaveButtonPressed() {
     const requestOptions = {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
     };
     fetch("/api/leave-room", requestOptions).then((_response) => {
       this.props.leaveRoomCallback();
@@ -149,24 +196,6 @@ export class Room extends Component {
             Code: {this.roomCode}
           </Typography>
         </Grid>
-
-        {/* <Grid item xs={12} align="center">
-          <Typography variant="h4" component="h4">
-            Votes: {this.state.votesToSkip}
-          </Typography>
-        </Grid>
-
-        <Grid item xs={12} align="center">
-          <Typography variant="h4" component="h4">
-            Guest Can Pause: {this.state.guestCanPause.toString()}
-          </Typography>
-        </Grid>
-
-        <Grid item xs={12} align="center">
-          <Typography variant="h4" component="h4">
-            Host: {this.state.isHost.toString()}
-          </Typography>
-        </Grid> */}
 
         <MusicPlayer {...this.state.song} />
 

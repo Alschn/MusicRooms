@@ -16,21 +16,41 @@ export class HomePage extends Component {
     super(props);
     this.state = {
       roomCode: null,
+      spotifyAuthenticated: false,
     };
-
-    this.clearRoomCode = this.clearRoomCode.bind(this);
   }
 
-  clearRoomCode() {
+  clearRoomCode = () => {
     this.setState({
       roomCode: null,
     });
-  }
+  };
 
-  // component lifecycle
+  isAuthenticated = () => {
+    fetch("/spotify/is-authenticated")
+      .then((response) => response.json())
+      .then((data) => {
+        this.setState({ spotifyAuthenticated: data.status });
+        return data.status;
+      });
+  };
+
+  authenticateSpotify = () => {
+    if (!this.state.spotifyAuthenticated) {
+      fetch("/spotify/get-auth-url")
+        .then((response) => response.json())
+        .then((data) => {
+          window.location.replace(data.url);
+        });
+    }
+  };
+
   async componentDidMount() {
+    // check if authenticated and set state
+    this.isAuthenticated();
+    // check if user is in room
     fetch("/api/user-in-room")
-      .then((response) => response.json()) // same as: return response.json() because it is one liner
+      .then((response) => response.json())
       .then((data) => {
         this.setState({
           roomCode: data.code,
@@ -47,17 +67,31 @@ export class HomePage extends Component {
           </Typography>
         </Grid>
 
-        <Grid item xs={12} align="center">
-          <ButtonGroup disableElevation variant="contained" color="primary">
-            <Button color="primary" to="/join" component={Link}>
-              Join a Room
-            </Button>
+        {this.state.spotifyAuthenticated ? (
+          <Grid item xs={12} align="center">
+            <ButtonGroup disableElevation variant="contained" color="primary">
+              <Button color="primary" to="/join" component={Link}>
+                Join a Room
+              </Button>
 
-            <Button color="secondary" to="/create" component={Link}>
-              Create a Room
-            </Button>
-          </ButtonGroup>
-        </Grid>
+              <Button color="secondary" to="/create" component={Link}>
+                Create a Room
+              </Button>
+            </ButtonGroup>
+          </Grid>
+        ) : (
+          <Grid item xs={12} align="center">
+            <ButtonGroup disableElevation variant="contained" color="primary">
+              <Button
+                onClick={this.authenticateSpotify}
+                component={Link}
+                style={{ backgroundColor: "#1DB954", fontWeight: 900 }}
+              >
+                Login in with Spotify
+              </Button>
+            </ButtonGroup>
+          </Grid>
+        )}
       </Grid>
     );
   }
