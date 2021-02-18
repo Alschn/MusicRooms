@@ -1,6 +1,8 @@
+from django.contrib.auth.models import User
 from django.db import models
 import random
 import string
+
 
 def generate_unique_code():
     length = 6
@@ -14,8 +16,8 @@ def generate_unique_code():
 
 class Room(models.Model):
     code = models.CharField(max_length=8, default=generate_unique_code, unique=True)
-    host = models.CharField(max_length=50, unique=True)
+    host = models.ForeignKey(User, on_delete=models.CASCADE)
     guest_can_pause = models.BooleanField(default=False, null=False)
     votes_to_skip = models.IntegerField(default=1, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    current_song = models.CharField(max_length=50, null=True)
+    current_song = models.CharField(max_length=100, null=True)

@@ -1,5 +1,17 @@
 # MusicRooms
-Music Rooms web application built with Django Rest Framework and React
+Music Rooms web application built with Django Rest Framework, React, Redux, Spotify Web API.  
+
+#### Used frameworks & libraries
+##### Backend:
+- Django
+- django-rest-framework
+- django-rest-auth
+- django-all-auth
+##### Frontend:
+- React
+- Redux
+- Material UI
+- axios
 
 ## Installation (dev)
 git clone https://github.com/Alschn/MusicRooms.git    
@@ -18,9 +30,10 @@ git clone https://github.com/Alschn/MusicRooms.git
     python manage.py createsuperuser  
 
     python manage.py runserver  
-   ### React Setup
+
+### React Setup
     cd frontend
     
     npm i
     
-    npm run dev
+    npm run build

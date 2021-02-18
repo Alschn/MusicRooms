@@ -1,17 +1,20 @@
 from django.http.response import JsonResponse
 from rest_framework import generics, status
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import Room
 from .serializers import RoomSerializer, CreateRoomSerializer, UpdateRoomSerializer
 
 
 class RoomView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
 
 
 class GetRoom(APIView):
+    permission_classes = [IsAuthenticated]
     serializer_class = RoomSerializer
     lookup_url_kwarg = 'code'   # pass a parameter called code
 
@@ -28,6 +31,7 @@ class GetRoom(APIView):
 
 
 class JoinRoom(APIView):
+    permission_classes = [IsAuthenticated]
     lookup_url_kwarg = 'code'
 
     def post(self, request, format=None):
@@ -50,6 +54,7 @@ class JoinRoom(APIView):
 
 
 class CreateRoomView(APIView):
+    permission_classes = [IsAuthenticated]
     serializer_class = CreateRoomSerializer
 
     def post(self, request, format=None):
@@ -79,6 +84,7 @@ class CreateRoomView(APIView):
 
 
 class UserInRoom(APIView):
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
         if not self.request.session.exists(self.request.session.session_key):
@@ -91,6 +97,8 @@ class UserInRoom(APIView):
 
 
 class LeaveRoom(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, format=None):
         if "room_code" in self.request.session:
             self.request.session.pop("room_code")
@@ -103,6 +111,7 @@ class LeaveRoom(APIView):
 
 
 class UpdateRoom(APIView):
+    permission_classes = [IsAuthenticated]
     serializer_class = UpdateRoomSerializer
 
     def patch(self, request, format=None):  # use patch when updating
