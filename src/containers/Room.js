@@ -74,7 +74,9 @@ export class Room extends Component {
       'Authorization': `Token ${token}`,
       'Content-Type': 'application/json',
     }
-    axios.post("/api/leave-room", {}, {
+    axios.post("/api/leave-room", {
+      roomCode: this.roomCode
+    }, {
       headers: headers
     }).then((response) => {
       this.props.history.push("/");

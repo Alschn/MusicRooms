@@ -22,9 +22,10 @@ class GetRoom(APIView):
     lookup_url_kwarg = 'code'  # pass a parameter called code
 
     def get(self, request, format=None):
-        code = request.GET.get(self.lookup_url_kwarg).rstrip()  # removes trailing \n !
+        code = request.GET.get(self.lookup_url_kwarg)
         user = request.user
         if code is not None:
+            code.rstrip()
             room = Room.objects.filter(code=code)
             if room.exists():
                 room = room[0]
@@ -44,10 +45,11 @@ class JoinRoom(APIView):
         code = request.data.get(self.lookup_url_kwarg)
         if code is not None:
             room_result = Room.objects.filter(code=code)
-            if len(room_result) > 0:
+            if room_result.exists():
                 room = room_result[0]
-                self.request.session['room_code'] = code
-                return Response({'message': 'Room Joined!'}, status=status.HTTP_200_OK)
+                user.room = room
+                user.save(update_fields=['room'])
+                return Response({'Message': 'Room Joined!'}, status=status.HTTP_200_OK)
             return Response({'Bad Request': 'Invalid Room Code!'}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
@@ -72,12 +74,12 @@ class CreateRoomView(APIView):
                 room.guest_can_pause = guest_can_pause
                 room.votes_to_skip = votes_to_skip
                 room.save(update_fields=['guest_can_pause', 'votes_to_skip'])
-                self.request.session['room_code'] = room.code  # to be replaced/removed
                 return Response(RoomSerializer(room).data, status=status.HTTP_200_OK)
             else:
                 room = Room(host=host, guest_can_pause=guest_can_pause, votes_to_skip=votes_to_skip)
                 room.save()
-                self.request.session['room_code'] = room.code  # to be replaced/removed
+                host.room = room
+                host.save(update_fields=['room'])
             return Response(RoomSerializer(room).data, status=status.HTTP_201_CREATED)
 
         return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
@@ -88,10 +90,8 @@ class UserInRoom(APIView):
 
     def get(self, request, format=None):
         user = request.user
-        room = Room.objects.filter(host=user)
-        if room.exists():
-            room = room[0]
-            code = room.code
+        if user.room:
+            code = user.room.code
             return JsonResponse({'code': code}, status=status.HTTP_200_OK)
 
         data = {
@@ -104,14 +104,27 @@ class LeaveRoom(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
-        # FOR NOW IT WILL DELETE THE ROOM IF SENDER IS HOST
+        try:
+            code = request.data.get('roomCode').rstrip()
+        except AttributeError:
+            return Response({'Error': 'Code parameter not found'}, status=status.HTTP_400_BAD_REQUEST)
         sender = request.user
-        room_results = Room.objects.filter(host=sender)
-        if room_results.exists():
-            room = room_results[0]
-            room.delete()
-            return Response({'Message': 'Success'}, status=status.HTTP_200_OK)
-        return Response({'Error': 'Did not manage to leave the room'}, status=status.HTTP_400_BAD_REQUEST)
+        room = Room.objects.filter(code=code)
+        if room.exists():
+            room = room[0]
+            if sender.room == room:
+                if sender == room.host:
+                    room.delete()
+                    return Response({'Message': 'Successfully deleted room!'}, status=status.HTTP_200_OK)
+                else:
+                    sender.room = None
+                    sender.save(update_fields=['room'])
+                    return Response({'Message': 'Success! User left the room.'}, status=status.HTTP_200_OK)
+            return Response({'Error': 'User is not a participant of this room!'}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {'Error': 'Did not manage to leave the room. Room not found!'},
+            status=status.HTTP_404_NOT_FOUND
+        )
 
 
 class UpdateRoom(APIView):

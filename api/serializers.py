@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.conf import settings
 from rest_framework import serializers
 from .models import Room
 
@@ -29,5 +29,5 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     """might come in handy later, rn not used"""
     class Meta:
-        model = User
+        model = settings.AUTH_USER_MODEL
         fields = ('id', 'username', 'email')

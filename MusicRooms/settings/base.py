@@ -90,3 +90,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'build/static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 SITE_ID = 1     # auth application index
+
+# Extend base user
+AUTH_USER_MODEL = 'api.User'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

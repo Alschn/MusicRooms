@@ -1,17 +1,14 @@
 from rest_auth.registration.serializers import SocialLoginSerializer
 from spotify_api.models import Vote
-# from spotify_api.credentials import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 from django.shortcuts import redirect
 from rest_framework.views import APIView
-# from requests import Request, post
 from rest_framework import status
 from rest_framework.response import Response
 from .utils import (
     execute_spotify_api_call,
-    is_spotify_authenticated,
     pause_song,
-    play_song, skip_song,
-    update_or_create_user_tokens
+    play_song,
+    skip_song,
 )
 from api.models import Room
 from allauth.socialaccount.providers.spotify.views import SpotifyOAuth2Adapter
@@ -39,17 +36,13 @@ class CurrentSong(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
-        # THIS WON"T WORK NORMAL USERS!!
         user = request.user
-        room = Room.objects.filter(host=user)
-        if room.exists():
-            room = room[0]
-        else:
-            return Response({'Error': 'User is not inside of the room.'}, status=status.HTTP_400_BAD_REQUEST)
+        room = user.room
+        if not room:
+            return Response({'Error': 'User is not inside of room.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        host = room.host
         endpoint = "player/currently-playing"
-        response = execute_spotify_api_call(host, endpoint)
+        response = execute_spotify_api_call(user, endpoint)
 
         if 'error' in response or 'item' not in response:
             return Response(response, status=status.HTTP_204_NO_CONTENT)
@@ -103,15 +96,13 @@ class PauseSong(APIView):
 
     def put(self, request, format=None):
         sender = request.user
-        room = Room.objects.filter(host=sender)
+        room = sender.room
 
-        if room.exists():
-            room = room[0]
-        else:
-            return Response({'Error': 'User is not inside of the room.'}, status=status.HTTP_404_NOT_FOUND)
+        if not room:
+            return Response({'Error': 'User is not inside of room.'}, status=status.HTTP_404_NOT_FOUND)
 
         if sender == room.host or room.guest_can_pause:
-            pause_song(room.host)
+            pause_song(sender)
             return Response({'Success': 'Paused song'}, status=status.HTTP_204_NO_CONTENT)
 
         return Response({'Error': 'You are not allowed to play a song!'}, status=status.HTTP_403_FORBIDDEN)
@@ -122,12 +113,10 @@ class PlaySong(APIView):
 
     def put(self, request, format=None):
         sender = request.user
-        room = Room.objects.filter(host=sender)
+        room = sender.room
 
-        if room.exists():
-            room = room[0]
-        else:
-            return Response({'Error': 'User is not inside of the room.'}, status=status.HTTP_404_NOT_FOUND)
+        if not room:
+            return Response({'Error': 'User is not inside of room.'}, status=status.HTTP_404_NOT_FOUND)
 
         if sender == room.host or room.guest_can_pause:
             play_song(room.host)
@@ -141,19 +130,17 @@ class SkipSong(APIView):
 
     def post(self, request, format=None):
         sender = request.user
-        room = Room.objects.filter(host=sender)
+        room = sender.room
 
-        if room.exists():
-            room = room[0]
-        else:
-            return Response({'Error': 'User is not inside of the room.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not room:
+            return Response({'Error': 'User is not inside of room.'}, status=status.HTTP_400_BAD_REQUEST)
 
         votes = Vote.objects.filter(room=room, song_id=room.current_song)
         voted_needed = room.votes_to_skip
 
         if sender == room.host or len(votes) + 1 >= voted_needed:
             votes.delete()  # delete last song's votes if we were to skip song
-            skip_song(room.host)
+            skip_song(sender)
             return Response({'Message': 'Skipped song'}, status.HTTP_204_NO_CONTENT)
         else:
             vote = Vote(user=sender, room=room, song_id=room.current_song)
