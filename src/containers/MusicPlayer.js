@@ -9,12 +9,10 @@ import {
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import SkipNextIcon from "@material-ui/icons/SkipNext";
 import PauseIcon from "@material-ui/icons/Pause";
-import getCookie from "../utils/Utils";
 
-const csrftoken = getCookie("csrftoken");
 const headers = {
+  "Authorization": `Token ${localStorage.getItem('token')}`,
   "Content-Type": "application/json",
-  "X-CSRFToken": csrftoken,
 };
 
 export default class MusicPlayer extends Component {
@@ -51,9 +49,9 @@ export default class MusicPlayer extends Component {
       (this.props.time / this.props.duration) * 100;
     return (
       <Card>
-        <Grid container alignItems="center">
+        <Grid container alignItems="center" justify="center">
           <Grid item align="center" xs={4}>
-            <img src={this.props.image_url} height="100%" width="100%" />
+            <img src={this.props.image_url} height="100%" width="100%"  alt=""/>
           </Grid>
 
           <Grid item align="center" xs={8}>

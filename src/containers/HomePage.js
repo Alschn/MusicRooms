@@ -6,7 +6,7 @@ import {
   Link,
   Redirect,
 } from "react-router-dom";
-import { Grid, Button, ButtonGroup, Typography } from "@material-ui/core";
+import { Grid, Button, ButtonGroup, Typography, Avatar } from "@material-ui/core";
 import { connect } from "react-redux";
 import { authSpotifyLogin } from "../store/actions/auth";
 import { Scopes, SpotifyAuth } from "react-spotify-auth";
@@ -16,12 +16,18 @@ import PrivateRoute from "./PrivateRoute";
 import CreateRoomPage from "./CreateRoomPage";
 import RoomJoinPage from "./RoomJoinPage";
 import Room from "./Room";
+import axios from "axios";
 
 export class HomePage extends Component {
+  // probably there should be another reducer for fetching data
+  // or just connect fetching data to auth reducer
   constructor(props) {
     super(props);
     this.state = {
       roomCode: null,
+      fetched: false,
+      user: null,
+      image_url: null,
     };
   }
 
@@ -32,34 +38,72 @@ export class HomePage extends Component {
   };
 
   async componentDidMount() {
-    // check if user is in room
-    // fetch("/api/user-in-room")
-    //   .then((response) => response.json())
-    //   .then((data) => {
-    //     this.setState({
-    //       roomCode: data.code,
-    //     });
-    //   });
+    const token = localStorage.getItem('token');
+
+    if (token !== null) {
+      const headers = {
+        'Authorization': `Token ${token}`,
+        'Content-Type': 'application/json',
+      }
+
+      axios.get("/api/user-in-room", {
+        headers: headers
+      })
+        .then(response => {
+          if (response.data.code) {
+            this.setState({
+              roomCode: response.data.code,
+            });
+          } else {
+            this.setState({roomCode: null})
+          }
+        });
+
+      const response = await axios.get(
+        '/spotify/get-current-user', {
+          headers: headers
+        }
+      )
+      const data = response.data;
+      this.setState({
+        fetched: true,
+        user: data.user,
+        image_url: data.image_url
+      })
+    }
   }
 
   renderHomePage() {
-    const {error, token} = this.props;
+    const {error, token, authenticated} = this.props;
     return (
       <Grid container spacing={3}>
+        {(this.state.fetched && authenticated) ? (
+          <Grid container direction="row" alignItems="center" justify="center" spacing={1}>
+            <Grid item>
+              <Avatar src={this.state.image_url}/>
+            </Grid>
+            <Grid item>
+              <Typography variant="h5" component="h5">{this.state.user}</Typography>
+            </Grid>
+          </Grid>
+        ) : (
+          <></>
+        )}
+
         <Grid item xs={12} align="center">
           <Typography variant="h3" component="h3">
             Music Rooms
           </Typography>
         </Grid>
 
-        {token !== null ? (
+        {authenticated ? (
           <Grid item xs={12} align="center">
             <ButtonGroup disableElevation variant="contained" color="primary">
-              <Button color="primary" to="/join" component={Link}>
+              <Button color="primary" onClick={() => this.props.history.push("/join")}>
                 Join a Room
               </Button>
 
-              <Button color="secondary" to="/create" component={Link}>
+              <Button color="secondary" onClick={() => this.props.history.push("/create")}>
                 Create a Room
               </Button>
             </ButtonGroup>
@@ -85,33 +129,16 @@ export class HomePage extends Component {
   }
 
   render() {
-    return (
-      <div className="center">
-        <Router>
-          <Switch>
-            <Route
-              exact
-              path="/"
-              render={() => {
-                return this.state.roomCode ? (
-                  <Redirect to={`/room/${this.state.roomCode}`}/>
-                ) : (
-                  this.renderHomePage()
-                );
-              }}
-            />
-            <PrivateRoute path="/join" component={RoomJoinPage}/>
-            <PrivateRoute path="/create" component={CreateRoomPage}/>
-            <PrivateRoute
-              path="/room/:roomCode"
-              render={(props) => {
-                return <Room {...props} leaveRoomCallback={this.clearRoomCode}/>;
-              }}
-            />
-          </Switch>
-        </Router>
-      </div>
-    );
+    if (this.state.roomCode !== null && this.state.roomCode !== undefined) {
+      return <Redirect to={`/room/${this.state.roomCode}`}/>
+    } else {
+      return (
+        <div className="center">
+          {this.renderHomePage()}
+        </div>
+      );
+    }
+
   }
 }
 
@@ -119,7 +146,8 @@ const mapStateToProps = state => {
   return {
     loading: state.auth.loading,
     error: state.auth.error,
-    token: state.auth.token
+    token: state.auth.token,
+    authenticated: state.auth.token !== null,
   };
 };
 

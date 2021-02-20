@@ -1,12 +1,10 @@
-import React, {Component} from "react";
+import React, { Component } from "react";
 import { connect } from "react-redux";
 import { Redirect } from "react-router-dom";
-import {authSpotifyLogin} from "../store/actions/auth";
-import {Scopes, SpotifyAuth} from "react-spotify-auth";
+import { authSpotifyLogin } from "../store/actions/auth";
+import { Scopes, SpotifyAuth } from "react-spotify-auth";
 import 'react-spotify-auth/dist/index.css';
-
-const REDIRECT_URI = 'http://127.0.0.1:8000/login'
-const CLIENT_ID = '69eb0591190d4ce298dcccb1e20857f4'
+import { REDIRECT_URI, CLIENT_ID } from "../utils/config";
 
 class Login extends Component {
   state = {};
@@ -16,29 +14,29 @@ class Login extends Component {
   }
 
   render() {
-    const { error, token } = this.props;
+    const {error, token} = this.props;
     if (token) {
-      return <Redirect to="/" />;
+      return <Redirect to="/"/>;
     }
     return (
-        <div>
-          <h2>
-            Log-in to your account
-          </h2>
+      <div>
+        <h2>
+          Log-in to your account
+        </h2>
 
-          <SpotifyAuth
-              redirectUri={REDIRECT_URI}
-              clientID={CLIENT_ID}
-              scopes={
-                [Scopes.all]
-              }
-              onAccessToken={token => {
-                this.handleSpotifyLogin(token)
-              }}
-          />
+        <SpotifyAuth
+          redirectUri={REDIRECT_URI}
+          clientID={CLIENT_ID}
+          scopes={
+            [Scopes.all]
+          }
+          onAccessToken={token => {
+            this.handleSpotifyLogin(token)
+          }}
+        />
 
-          {error && <p>{this.props.error.message}</p>}
-        </div>
+        {error && <p>{this.props.error.message}</p>}
+      </div>
     );
   }
 }

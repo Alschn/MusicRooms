@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { TextField, Button, Grid, Typography } from "@material-ui/core";
 import { Link } from "react-router-dom";
+import { connect } from "react-redux";
 
 export class RoomJoinPage extends Component {
   constructor(props) {
@@ -23,7 +24,10 @@ export class RoomJoinPage extends Component {
   roomButtonPressed() {
     const requestOptions = {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Token ${localStorage.getItem('token')}`
+      },
       body: JSON.stringify({
         code: this.state.roomCode,
       }),
@@ -34,7 +38,7 @@ export class RoomJoinPage extends Component {
         if (response.ok) {
           this.props.history.push(`/room/${this.state.roomCode}`);
         } else {
-          this.setState({ error: "Room not found" });
+          this.setState({error: "Room not found"});
         }
       })
       .catch((error) => {
@@ -90,4 +94,4 @@ export class RoomJoinPage extends Component {
   }
 }
 
-export default RoomJoinPage;
+export default connect()(RoomJoinPage);

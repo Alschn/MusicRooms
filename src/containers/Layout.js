@@ -1,25 +1,33 @@
-import React, {Component} from "react";
-import {Link, withRouter} from "react-router-dom";
-import {connect} from "react-redux";
-import {logout} from "../store/actions/auth";
-
+import React, { Component } from "react";
+import { Link, withRouter } from "react-router-dom";
+import { connect } from "react-redux";
+import { logout } from "../store/actions/auth";
+import Button from "@material-ui/core/Button";
 
 class CustomLayout extends Component {
   render() {
     const {authenticated} = this.props;
     return (
-      <div>
-        <Link to="/">
+      <div align="center">
+        <Button variant="contained" href="/">
           Home
-        </Link>
+        </Button>
         {authenticated ? (
-          <button onClick={() => this.props.logout()}>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => this.props.logout()}
+          >
             Logout
-          </button>
+          </Button>
         ) : (
-          <Link to="/login">
+          <Button
+            variant="contained"
+            color="primary"
+            href="/login"
+          >
             Login
-          </Link>
+          </Button>
         )}
 
         {this.props.children}

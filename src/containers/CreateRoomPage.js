@@ -11,9 +11,9 @@ import RadioGroup from "@material-ui/core/RadioGroup";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import { Collapse } from "@material-ui/core";
 import Alert from "@material-ui/lab/Alert";
-import getCookie from "../utils/Utils";
+import { connect } from "react-redux";
+import axios from "axios";
 
-const csrftoken = getCookie("csrftoken");
 
 export class CreateRoomPage extends Component {
   static defaultProps = {
@@ -21,7 +21,8 @@ export class CreateRoomPage extends Component {
     guestCanPause: true,
     update: false,
     roomCode: null,
-    updateCallback: () => {},
+    updateCallback: () => {
+    },
   };
 
   constructor(props) {
@@ -32,53 +33,41 @@ export class CreateRoomPage extends Component {
       successMsg: "",
       errorMsg: "",
     };
-
-    // bind these methods to class so that we could access THIS keyword
-    this.handleRoomButtonPressed = this.handleRoomButtonPressed.bind(this);
-    this.handleVotesChanged = this.handleVotesChanged.bind(this);
-    this.handleGuestCanPauseChanged = this.handleGuestCanPauseChanged.bind(
-      this
-    );
-    this.handleUpdateButtonPressed = this.handleUpdateButtonPressed.bind(this);
   }
 
-  handleVotesChanged(e) {
+  handleVotesChanged = e => {
     this.setState({
       votesToSkip: e.target.value,
     });
   }
 
-  handleGuestCanPauseChanged(e) {
+  handleGuestCanPauseChanged = e => {
     this.setState({
-      guestCanPause: e.target.value === "true" ? true : false,
+      guestCanPause: e.target.value === "true",
     });
   }
 
-  // post request to the endpoint
-  handleRoomButtonPressed() {
-    const requestOptions = {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
-      body: JSON.stringify({
-        votes_to_skip: this.state.votesToSkip,
-        guest_can_pause: this.state.guestCanPause,
-      }),
-    };
-
-    fetch("/api/create-room", requestOptions)
+  handleCreateButtonPressed = () => {
+    const token = localStorage.getItem('token');
+    axios.post("/api/create-room", {
+      votes_to_skip: this.state.votesToSkip,
+      guest_can_pause: this.state.guestCanPause,
+    }, {
+      headers: {
+        "Authorization": `Token ${token}`,
+        "Content-Type": "application/json",
+      }
+    })
       .then((response) => {
-        console.log(response);
-        return response.json();
-      })
-      .then((data) => {
-        this.props.history.push("/room/" + data.code);
-      });
+        this.props.history.push("/room/" + response.data.code);
+      }).catch(err => console.log(err));
   }
 
-  handleUpdateButtonPressed() {
+  handleUpdateButtonPressed = () => {
+    const token = localStorage.getItem('token');
     const requestOptions = {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
+      headers: {"Content-Type": "application/json", "Authorization": `Token ${token}`},
       body: JSON.stringify({
         votes_to_skip: this.state.votesToSkip,
         guest_can_pause: this.state.guestCanPause,
@@ -93,7 +82,7 @@ export class CreateRoomPage extends Component {
         });
       } else {
         this.setState({
-          errorMsg: "Room updated successfully!",
+          errorMsg: `An error has occurred! Status: ${response.status}`,
         });
       }
       this.props.updateCallback();
@@ -107,7 +96,7 @@ export class CreateRoomPage extends Component {
           <Button
             color="primary"
             variant="contained"
-            onClick={this.handleRoomButtonPressed}
+            onClick={this.handleCreateButtonPressed}
           >
             Create A Room
           </Button>
@@ -151,7 +140,7 @@ export class CreateRoomPage extends Component {
               <Alert
                 severity="success"
                 onClose={() => {
-                  this.setState({ successMsg: "" });
+                  this.setState({successMsg: ""});
                 }}
               >
                 {this.state.successMsg}
@@ -160,12 +149,10 @@ export class CreateRoomPage extends Component {
               <Alert
                 severity="error"
                 onClose={() => {
-                  this.setState({ errorMsg: "" });
+                  this.setState({errorMsg: ""});
                 }}
               >
                 {this.state.errorMsg}
-                {/* there should be an additional check - when popup disappears it turns red
-                which should not be the case */}
               </Alert>
             )}
           </Collapse>
@@ -189,14 +176,14 @@ export class CreateRoomPage extends Component {
             >
               <FormControlLabel
                 value="true"
-                control={<Radio color="primary" />}
+                control={<Radio color="primary"/>}
                 label="Play/Pause"
                 labelPlacement="bottom"
               />
 
               <FormControlLabel
                 value="false"
-                control={<Radio color="secondary" />}
+                control={<Radio color="secondary"/>}
                 label="No Control"
                 labelPlacement="bottom"
               />
@@ -213,7 +200,7 @@ export class CreateRoomPage extends Component {
               defaultValue={this.props.votesToSkip}
               inputProps={{
                 min: 1,
-                style: { textAlign: "center" },
+                style: {textAlign: "center"},
               }}
             />
             <FormHelperText>
@@ -231,4 +218,4 @@ export class CreateRoomPage extends Component {
   }
 }
 
-export default CreateRoomPage;
+export default connect()(CreateRoomPage);

@@ -30,47 +30,22 @@ class SpotifyLogin(SocialLoginView):
         kwargs['context'] = self.get_serializer_context()
         return serializer_class(*args, **kwargs)
 
-#     scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing streaming user-read-email user-read-private'
 
 def spotify_callback(request, format=None):
-    # code = request.GET.get('code')
-    # # error = request.GET.get('error')    # not used
-    #
-    # response = post('https://accounts.spotify.com/api/token', data={
-    #     'grant_type': 'authorization_code',
-    #     'code': code,
-    #     'redirect_uri': REDIRECT_URI,
-    #     'client_id': CLIENT_ID,
-    #     'client_secret': CLIENT_SECRET,
-    # }).json()
-    #
-    # access_token = response.get('access_token')
-    # token_type = response.get('token_type')
-    # refresh_token = response.get('refresh_token')
-    # expires_in = response.get('expires_in')
-    # error = response.get('error')
-    #
-    # if not request.session.exists(request.session.session_key):
-    #     request.session.create()
-    #
-    # update_or_create_user_tokens(request.session.session_key, access_token, token_type, expires_in, refresh_token)
-    return redirect('home')    # return to different frontend app
-
-
-# class IsAuthenticated(APIView):
-#     def get(self, request, format=None):
-#         is_authenticated = is_spotify_authenticated(self.request.session.session_key)
-#         return Response({'status': is_authenticated}, status=status.HTTP_200_OK)
+    return redirect('home')  # return to different frontend app
 
 
 class CurrentSong(APIView):
-    def get(self, request, format=None):
-        room_code = self.request.session.get('room_code')
-        room = Room.objects.filter(code=room_code)
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, format=None):
+        # THIS WON"T WORK NORMAL USERS!!
+        user = request.user
+        room = Room.objects.filter(host=user)
         if room.exists():
             room = room[0]
         else:
-            return Response({'Error': 'User is not inside of the room.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'Error': 'User is not inside of the room.'}, status=status.HTTP_400_BAD_REQUEST)
 
         host = room.host
         endpoint = "player/currently-playing"
@@ -82,19 +57,19 @@ class CurrentSong(APIView):
         item = response.get('item')
         duration = item.get('duration_ms')
         progress = response.get('progress_ms')
-        album_cover = item.get('album').get('images')[0].get('url')     # album > images > first image > its url
+        album_cover = item.get('album').get('images')[0].get('url')  # album > images > first image > its url
         is_playing = response.get('is_playing')
         song_id = item.get('id')
         title = item.get('name')
 
-        artist_str = ""     # multiple artists - own string formatting
+        artist_str = ""  # multiple artists - own string formatting
         for i, artist in enumerate(item.get('artists')):
             if i > 0:
                 artist_str += ", "
             name = artist.get('name')
             artist_str += name
 
-        votes = len(Vote.objects.filter(room=room, song_id=song_id))    # how many votes does the song have
+        votes = len(Vote.objects.filter(room=room, song_id=song_id))  # how many votes does the song have
 
         song = {
             'title': title,
@@ -119,22 +94,23 @@ class CurrentSong(APIView):
         if current_song != song_id:
             room.current_song = song_id
             room.save(update_fields=['current_song'])
-            votes = Vote.objects.filter(room=room).delete()
+            votes = Vote.objects.filter(room=room)
+            votes.delete()
 
 
 class PauseSong(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request, format=None):
-        room_code = self.request.session.get('room_code')
-        room = Room.objects.filter(code=room_code)
+        sender = request.user
+        room = Room.objects.filter(host=sender)
 
         if room.exists():
             room = room[0]
         else:
             return Response({'Error': 'User is not inside of the room.'}, status=status.HTTP_404_NOT_FOUND)
 
-        if self.request.session.session_key == room.host or room.guest_can_pause:
+        if sender == room.host or room.guest_can_pause:
             pause_song(room.host)
             return Response({'Success': 'Paused song'}, status=status.HTTP_204_NO_CONTENT)
 
@@ -145,15 +121,15 @@ class PlaySong(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request, format=None):
-        room_code = self.request.session.get('room_code')
-        room = Room.objects.filter(code=room_code)
+        sender = request.user
+        room = Room.objects.filter(host=sender)
 
         if room.exists():
             room = room[0]
         else:
             return Response({'Error': 'User is not inside of the room.'}, status=status.HTTP_404_NOT_FOUND)
 
-        if self.request.session.session_key == room.host or room.guest_can_pause:
+        if sender == room.host or room.guest_can_pause:
             play_song(room.host)
             return Response({'Success': 'Playing song'}, status=status.HTTP_204_NO_CONTENT)
 
@@ -164,23 +140,23 @@ class SkipSong(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, format=None):
-        room_code = self.request.session.get('room_code')
-        room = Room.objects.filter(code=room_code)
+        sender = request.user
+        room = Room.objects.filter(host=sender)
 
         if room.exists():
             room = room[0]
         else:
-            return Response({'Error': 'User is not inside of the room.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'Error': 'User is not inside of the room.'}, status=status.HTTP_400_BAD_REQUEST)
 
         votes = Vote.objects.filter(room=room, song_id=room.current_song)
         voted_needed = room.votes_to_skip
 
-        if self.request.session.session_key == room.host or len(votes) + 1 >= voted_needed:
+        if sender == room.host or len(votes) + 1 >= voted_needed:
             votes.delete()  # delete last song's votes if we were to skip song
             skip_song(room.host)
             return Response({'Message': 'Skipped song'}, status.HTTP_204_NO_CONTENT)
         else:
-            vote = Vote(user=self.request.session.session_key, room=room, song_id=room.current_song)
+            vote = Vote(user=sender, room=room, song_id=room.current_song)
             vote.save()
             return Response({'Message': 'Added skip vote'}, status.HTTP_204_NO_CONTENT)
 
@@ -194,7 +170,7 @@ class CurrentUser(APIView):
         if social_acc.exists():
             social_acc = social_acc[0]
         else:
-            return Response({'Error': 'Social account not found!'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'Error': 'Social account not found!'}, status=status.HTTP_404_NOT_FOUND)
         data = social_acc.extra_data
 
         country = data.get('country')

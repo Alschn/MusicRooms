@@ -34,6 +34,13 @@ urlpatterns = [
     path('spotify/', include('spotify_api.urls')),
     path('api/', include('api.urls')),
     # Frontend
-    path(r'', TemplateView.as_view(template_name='index.html'), name='home'),
-    path(r'login/', TemplateView.as_view(template_name='index.html')),
+    # messy rn
+    path('', TemplateView.as_view(template_name='index.html'), name='home'),
+    path('login/', TemplateView.as_view(template_name='index.html')),
+    path('login', TemplateView.as_view(template_name='index.html')),
+    path('join', TemplateView.as_view(template_name='index.html')),
+    path('create', TemplateView.as_view(template_name='index.html')),
+    path('join/', TemplateView.as_view(template_name='index.html')),
+    path('create/', TemplateView.as_view(template_name='index.html')),
+    path('room/<str:roomCode>', TemplateView.as_view(template_name='index.html')),
 ]

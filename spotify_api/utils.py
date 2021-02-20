@@ -1,17 +1,23 @@
 from datetime import timedelta
+
+from django.contrib.auth.models import User
+
 from .models import SpotifyToken
 from django.utils import timezone
 from requests import post, get, put
 from .credentials import CLIENT_ID, CLIENT_SECRET
-from allauth.socialaccount.models import SocialToken
+from allauth.socialaccount.models import SocialToken, SocialAccount
 
 BASE_URL = "https://api.spotify.com/v1/me/"
 
 
 def get_user_tokens(user):
-    user_tokens = SocialToken.objects.filter(account=user)
-    if user_tokens.exists():
-        return user_tokens[0]
+    social_acc = SocialAccount.objects.filter(user=user)
+    if social_acc.exists():
+        account = social_acc[0]
+        user_tokens = SocialToken.objects.filter(account=account)
+        if user_tokens.exists():
+            return user_tokens[0].token
     return None
 
 
@@ -66,8 +72,8 @@ def refresh_spotify_token(session_id):
 
 
 def execute_spotify_api_call(user, endpoint, post_=False, put_=False):
-    tokens = get_user_tokens(user)
-    headers = {'Content-Type': 'application/json', 'Authorization': "Bearer " + tokens.access_token}
+    spotify_token = get_user_tokens(user)
+    headers = {'Content-Type': 'application/json', 'Authorization': "Bearer " + spotify_token}
 
     if post_:
         post(BASE_URL + endpoint, headers=headers)

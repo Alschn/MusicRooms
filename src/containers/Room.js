@@ -2,9 +2,10 @@ import React, { Component } from "react";
 import { Grid, Button, Typography } from "@material-ui/core";
 import CreateRoomPage from "./CreateRoomPage";
 import MusicPlayer from "./MusicPlayer";
-import getCookie from "../utils/Utils";
+import axios from "axios";
+import { connect } from "react-redux";
+import CircularProgress from "@material-ui/core/CircularProgress";
 
-const csrftoken = getCookie("csrftoken");
 
 export class Room extends Component {
   constructor(props) {
@@ -14,65 +15,17 @@ export class Room extends Component {
       guestCanPause: false,
       isHost: false,
       showSettings: false,
-      spotifyAuthenticated: false,
       song: {},
     };
     this.roomCode = this.props.match.params.roomCode; // react router
-    this.leaveButtonPressed = this.leaveButtonPressed.bind(this);
     this.updateShowSettings = this.updateShowSettings.bind(this);
     this.renderSettingsButton = this.renderSettingsButton.bind(this);
     this.renderSettings = this.renderSettings.bind(this);
     this.getRoomDetails = this.getRoomDetails.bind(this);
-    this.authenticateSpotify = this.authenticateSpotify.bind(this);
-    this.getCurrentSong = this.getCurrentSong.bind(this);
     this.getRoomDetails();
   }
 
   componentDidMount() {
-    // if (window.Spotify == null) {
-    //   const script = document.createElement("script");
-    //   script.src = "https://sdk.scdn.co/spotify-player.js";
-    //   script.async = true;
-    //   document.body.appendChild(script);
-    //   window.onSpotifyWebPlaybackSDKReady = () => {
-    //     window.Spotify = Spotify;
-    //     const token =
-    //       "BQDcyZ2z6i8zhUv2Cyd05W5lcanjyN4BPnpfLCboAbdCEd2vYp0unQgob_6n7qpPFbJMpE7gsptk1b7YDq8LEon1LN-BpwXzBQSfPuXly_iXTiXkoQUg_J9sBEgmTkZXT2u7mXehg8MuWh6Wl1x85WxdSbF1gAQ4Ljs";
-    //     const player = new Spotify.Player({
-    //       name: "Web Playback SDK Quick Start Player",
-    //       getOAuthToken: (cb) => {
-    //         cb(token);
-    //       },
-    //     });
-    //     // Error handling
-    //     player.addListener("initialization_error", ({ message }) => {
-    //       console.error(message);
-    //     });
-    //     player.addListener("authentication_error", ({ message }) => {
-    //       console.error(message);
-    //     });
-    //     player.addListener("account_error", ({ message }) => {
-    //       console.error(message);
-    //     });
-    //     player.addListener("playback_error", ({ message }) => {
-    //       console.error(message);
-    //     });
-    //     // Playback status updates
-    //     player.addListener("player_state_changed", (state) => {
-    //       console.log(state);
-    //     });
-    //     // Ready
-    //     player.addListener("ready", ({ device_id }) => {
-    //       console.log("Ready with Device ID", device_id);
-    //     });
-    //     // Not Ready
-    //     player.addListener("not_ready", ({ device_id }) => {
-    //       console.log("Device ID has gone offline", device_id);
-    //     });
-    //     // Connect to the player!
-    //     player.connect();
-    //   };
-    // }
     this.interval = setInterval(this.getCurrentSong, 5000);
   }
 
@@ -81,60 +34,52 @@ export class Room extends Component {
   }
 
   getRoomDetails() {
-    fetch("/api/get-room" + "?code=" + this.roomCode)
-      .then((response) => {
-        if (!response.ok) {
-          this.props.leaveRoomCallback();
-          this.props.history.push("/");
-        }
-        return response.json();
-      })
-      .then((data) => {
+    const token = localStorage.getItem('token');
+    const headers = {
+      'Authorization': `Token ${token}`,
+      'Content-Type': 'application/json',
+    }
+    axios.get("/api/get-room" + "?code=" + this.roomCode, {
+      headers: headers
+    })
+      .then((response) => { // do something in case of error here
         this.setState({
-          votesToSkip: data.votes_to_skip,
-          guestCanPause: data.guest_can_pause,
-          isHost: data.is_host,
+          votesToSkip: response.data.votes_to_skip,
+          guestCanPause: response.data.guest_can_pause,
+          isHost: response.data.is_host,
         });
-        if (this.state.isHost) {
-          // this.authenticateSpotify();
-        }
-      });
+      }).catch(err => {
+        this.props.history.push("/");
+      }
+    );
   }
 
-  authenticateSpotify() {
-    fetch("/spotify/is-authenticated")
-      .then((response) => response.json())
-      .then((data) => {
-        this.setState({ spotifyAuthenticated: data.status }); // status was returned in Response
-        if (!data.status) {
-          fetch("/spotify/get-auth-url")
-            .then((response) => response.json())
-            .then((data) => {
-              window.location.replace(data.url); // JS redirect
-            });
-        }
-      });
+  getCurrentSong = () => {
+    const token = localStorage.getItem('token');
+    const headers = {
+      'Authorization': `Token ${token}`,
+      'Content-Type': 'application/json',
+    }
+    axios.post("/spotify/current-song", {
+      roomCode: this.roomCode
+    }, {
+      headers: headers
+    })
+      .then((data) => this.setState({song: data}));
   }
 
-  getCurrentSong() {
-    fetch("/spotify/current-song")
-      .then((response) => {
-        if (!response.ok) {
-          return { "Response Error": "Could not play the song!" };
-        }
-        return response.json();
-      })
-      .then((data) => this.setState({ song: data }));
-  }
-
-  leaveButtonPressed() {
-    const requestOptions = {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-CSRFToken": csrftoken },
-    };
-    fetch("/api/leave-room", requestOptions).then((_response) => {
-      this.props.leaveRoomCallback();
+  leaveButtonPressed = () => {
+    const token = localStorage.getItem('token');
+    const headers = {
+      'Authorization': `Token ${token}`,
+      'Content-Type': 'application/json',
+    }
+    axios.post("/api/leave-room", {}, {
+      headers: headers
+    }).then((response) => {
       this.props.history.push("/");
+    }).catch(err => {
+      console.log(err);
     });
   }
 
@@ -190,14 +135,24 @@ export class Room extends Component {
       return this.renderSettings();
     }
     return (
-      <Grid container spacing={1}>
+      <Grid container spacing={1} className="center">
         <Grid item xs={12} align="center">
           <Typography variant="h4" component="h4">
             Code: {this.roomCode}
           </Typography>
         </Grid>
 
-        <MusicPlayer {...this.state.song} />
+        <div style={{marginLeft: "auto", marginRight: "auto"}}>
+          { // check if song data has been fetched (object has any keys)
+            Object.keys(this.state.song).length !== 0
+              ?
+              <MusicPlayer {...this.state.song.data} code={this.roomCode}/>
+              :
+              <div style={{paddingTop: "100px", paddingBottom: "100px"}}>
+                <CircularProgress/>
+              </div>
+          }
+        </div>
 
         {this.state.isHost ? this.renderSettingsButton() : null}
 
@@ -215,4 +170,10 @@ export class Room extends Component {
   }
 }
 
-export default Room;
+const mapStateToProps = state => {
+  return {
+    authenticated: state.auth.token !== null
+  };
+};
+
+export default connect(mapStateToProps)(Room);
