@@ -41,7 +41,7 @@ export const checkAuthTimeout = expirationTime => {
 export const authSpotifyLogin = (token) => {
   return dispatch => {
     dispatch(authStart());
-    axios.post('http://127.0.0.1:8000/rest-auth/spotify/', {
+    axios.post('/rest-auth/spotify/', {
       access_token: token
     }).then(
         res => {

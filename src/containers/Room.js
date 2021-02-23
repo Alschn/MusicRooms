@@ -18,10 +18,6 @@ export class Room extends Component {
       song: {},
     };
     this.roomCode = this.props.match.params.roomCode; // react router
-    this.updateShowSettings = this.updateShowSettings.bind(this);
-    this.renderSettingsButton = this.renderSettingsButton.bind(this);
-    this.renderSettings = this.renderSettings.bind(this);
-    this.getRoomDetails = this.getRoomDetails.bind(this);
     this.getRoomDetails();
   }
 
@@ -33,7 +29,7 @@ export class Room extends Component {
     clearInterval(this.interval);
   }
 
-  getRoomDetails() {
+  getRoomDetails = () => {
     const token = localStorage.getItem('token');
     const headers = {
       'Authorization': `Token ${token}`,
@@ -85,13 +81,13 @@ export class Room extends Component {
     });
   }
 
-  updateShowSettings(value) {
+  updateShowSettings = (value) => {
     this.setState({
       showSettings: value,
     });
   }
 
-  renderSettings() {
+  renderSettings = () => {
     return (
       <Grid container spacing={1}>
         <Grid item xs={12} align="center">
@@ -117,7 +113,7 @@ export class Room extends Component {
     );
   }
 
-  renderSettingsButton() {
+  renderSettingsButton = () => {
     // render if host
     return (
       <Grid item xs={12} align="center">

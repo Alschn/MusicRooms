@@ -12,10 +12,6 @@ import { authSpotifyLogin } from "../store/actions/auth";
 import { Scopes, SpotifyAuth } from "react-spotify-auth";
 import { REDIRECT_URI, CLIENT_ID } from "../utils/config"
 import 'react-spotify-auth/dist/index.css';
-import PrivateRoute from "./PrivateRoute";
-import CreateRoomPage from "./CreateRoomPage";
-import RoomJoinPage from "./RoomJoinPage";
-import Room from "./Room";
 import axios from "axios";
 
 export class HomePage extends Component {

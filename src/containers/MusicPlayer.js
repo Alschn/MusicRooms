@@ -51,7 +51,7 @@ export default class MusicPlayer extends Component {
       <Card>
         <Grid container alignItems="center" justify="center">
           <Grid item align="center" xs={4}>
-            <img src={this.props.image_url} height="100%" width="100%"  alt=""/>
+            <img src={this.props.image_url} height="100%" width="100%" alt=""/>
           </Grid>
 
           <Grid item align="center" xs={8}>
@@ -69,10 +69,10 @@ export default class MusicPlayer extends Component {
                   this.props.is_playing ? this.pauseSong() : this.playSong()
                 }
               >
-                {this.props.is_playing ? <PauseIcon /> : <PlayArrowIcon />}
+                {this.props.is_playing ? <PauseIcon/> : <PlayArrowIcon/>}
               </IconButton>
               <IconButton onClick={() => this.skipSong()}>
-                <SkipNextIcon />
+                <SkipNextIcon/>
               </IconButton>
               <h3>
                 Votes: {this.props.votes} / {this.props.votes_required}
@@ -80,7 +80,7 @@ export default class MusicPlayer extends Component {
             </div>
           </Grid>
         </Grid>
-        <LinearProgress variant="determinate" value={songProgressPercentage} />
+        <LinearProgress variant="determinate" value={songProgressPercentage}/>
       </Card>
     );
   }
