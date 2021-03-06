@@ -1,11 +1,4 @@
 import React, { Component } from "react";
-import {
-  BrowserRouter as Router,
-  Switch,
-  Route,
-  Link,
-  Redirect,
-} from "react-router-dom";
 import { Grid, Button, ButtonGroup, Typography, Avatar } from "@material-ui/core";
 import { connect } from "react-redux";
 import { authSpotifyLogin } from "../store/actions/auth";
@@ -113,7 +106,8 @@ export class HomePage extends Component {
                 [Scopes.all]
               }
               onAccessToken={token => {
-                this.handleSpotifyLogin(token)
+                this.handleSpotifyLogin(token);
+                localStorage.setItem('SpotifyToken', token);
               }}
             />
 
@@ -126,7 +120,12 @@ export class HomePage extends Component {
 
   render() {
     if (this.state.roomCode !== null && this.state.roomCode !== undefined) {
-      return <Redirect to={`/room/${this.state.roomCode}`}/>
+      // return <Redirect to={`/room/${this.state.roomCode}`}/>
+      return (
+        <div className="center">
+          {this.renderHomePage()}
+        </div>
+      );
     } else {
       return (
         <div className="center">

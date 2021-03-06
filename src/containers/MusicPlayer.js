@@ -18,6 +18,7 @@ const headers = {
 export default class MusicPlayer extends Component {
   constructor(props) {
     super(props);
+    console.log(props);
   }
 
   skipSong() {
@@ -25,7 +26,9 @@ export default class MusicPlayer extends Component {
       method: "POST",
       headers: headers,
     };
-    fetch("/spotify/skip", requestOptions);
+    fetch("/spotify/skip", requestOptions)
+      .then(() => {
+      });
   }
 
   pauseSong() {
@@ -33,7 +36,9 @@ export default class MusicPlayer extends Component {
       method: "PUT",
       headers: headers,
     };
-    fetch("/spotify/pause", requestOptions);
+    fetch("/spotify/pause", requestOptions)
+      .then(() => {
+      });
   }
 
   playSong() {
@@ -41,14 +46,16 @@ export default class MusicPlayer extends Component {
       method: "PUT",
       headers: headers,
     };
-    fetch("/spotify/play", requestOptions);
+    fetch("/spotify/play", requestOptions)
+      .then(() => {
+      });
   }
 
   render() {
     const songProgressPercentage =
       (this.props.time / this.props.duration) * 100;
     return (
-      <Card>
+      <Card className="player">
         <Grid container alignItems="center" justify="center">
           <Grid item align="center" xs={4}>
             <img src={this.props.image_url} height="100%" width="100%" alt=""/>

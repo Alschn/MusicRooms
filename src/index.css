@@ -42,3 +42,14 @@ body {
     background-position: 0 50%;
   }
 }
+
+/* Room */
+.chatSection {
+    max-width: 500px;
+    height: 80vh;
+}
+
+.messageArea {
+    height: 70vh;
+    overflow-y: auto;
+}

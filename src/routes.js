@@ -6,6 +6,7 @@ import HomePage from "./containers/HomePage";
 import RoomJoinPage from "./containers/RoomJoinPage";
 import CreateRoomPage from "./containers/CreateRoomPage";
 import Room from "./containers/Room";
+import MusicRoom from "./containers/MusicRoom";
 
 const BaseRouter = () => (
   <Hoc>
@@ -14,6 +15,7 @@ const BaseRouter = () => (
     <Route path="/join" component={RoomJoinPage}/>
     <Route path="/create" component={CreateRoomPage}/>
     <Route path="/room/:roomCode" component={Room}/>
+    <Route path="/rooms/:roomCode" component={MusicRoom}/>
   </Hoc>
 );
 

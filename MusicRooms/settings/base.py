@@ -34,9 +34,12 @@ INSTALLED_APPS = [
     # rest_framework
     'rest_framework',
     'rest_framework.authtoken',
+    # django channels
+    'channels',
     # applications
     'spotify_api',
     'api',
+    'rooms',
 ]
 
 MIDDLEWARE = [
