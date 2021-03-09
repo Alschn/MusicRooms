@@ -17,29 +17,46 @@ import Typography from '@material-ui/core/Typography';
 import CreateRoomPage from "./CreateRoomPage";
 import MusicPlayer from "./MusicPlayer";
 import { sample_messages, SOCKET_URL } from "../utils/config";
-import useScript from "../hooks/useScript";
+import useScript from "react-script-hook";
+import Cookies from 'js-cookie';
 
-window.onSpotifyWebPlaybackSDKReady = () => {
-  console.log('onSpotifyWebPlaybackSDKReady');
-};
-
+const spotifyToken = Cookies.get('spotifyAuthToken');
 
 const MusicRoom = (props) => {
   // Hooks
   let history = useHistory();
   const {roomCode} = useParams();
   const ws = useRef(null);
-  // Spotify Web Playback SDK script
-  const script = useScript("https://sdk.scdn.co/spotify-player.js");
+
+  // Spotify Web Playback SDK
+  const [loading, error] = useScript({
+    src: "https://sdk.scdn.co/spotify-player.js",
+    onload: () => {
+      console.log('Script has been loaded');
+    }
+  });
+
+  const [sdk, setSdk] = useState(null);
+  const [deviceID, setDeviceID] = useState(null);
+
+  const [currentTrack, setCurrentTrack] = useState({});
+  const [playback, setPlayback] = useState(0);
+  const [playbackState, setPlaybackState] = useState({
+    play: false,
+    shuffle: false,
+    repeat: false,
+    progress: 0,
+    total_time: 0,
+  });
+
   // room state
   const [votesToSkip, setVotesToSkip] = useState(2);
   const [guestCanPause, setGuestCanPause] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [currentSong, setCurrentSong] = useState({});
-  // chat input
+
+  // chat input & content
   const [message, setMessage] = useState("");
-  // chat content
   const [messages, setMessages] = useState(sample_messages);
 
   const token = localStorage.getItem('token');
@@ -78,19 +95,110 @@ const MusicRoom = (props) => {
       if (parsedData.command === "new_message") {
         const {text, time} = parsedData;
         addMessage({text, time, user: 1});
-      } else if (parsedData.command === "fetch_messages") {
-        //
+      } else if (parsedData.command === "request_fetch") {
+        if (isHost) {
+          // send message with current player state
+        }
+      } else if (parsedData.command === "fetch_current_song" && !isHost) {
+        // fetch host's player state
       }
     }
   }, [])
 
   useEffect(() => {
-    // temporary fetch every 5 seconds
-    const interval = setInterval(() => {
-      getCurrentSong();
-    }, 5000)
-    return () => clearInterval(interval);
-  })
+     const waitForSpotifyWebPlaybackSDKToLoad = async () => {
+      return new Promise((resolve) => {
+        if (window.Spotify) {
+          resolve(window.Spotify);
+        } else {
+          window.onSpotifyWebPlaybackSDKReady = () => {
+            resolve(window.Spotify);
+          };
+        }
+      });
+    }
+
+    (async () => {
+      const {Player} = await waitForSpotifyWebPlaybackSDKToLoad();
+      console.log("The Web Playback SDK has loaded.");
+      const sdk = new Player({
+        name: "Music Rooms - music player",
+        volume: 0.3,
+        getOAuthToken: (callback) => {
+          callback(spotifyToken);
+        },
+      });
+
+      sdk.on('authentication_error', ({message}) => {
+        console.error('Failed to authenticate', message)
+      })
+
+      setSdk(sdk);
+
+      sdk.addListener("ready", ({device_id}) => {
+        console.log('Ready with device: ' + device_id);
+        setDeviceID(device_id);
+
+        playFromDevice(device_id);
+      });
+
+      sdk.addListener("player_state_changed", (state) => {
+        try {
+          const {
+            duration,
+            position,
+            paused,
+            shuffle,
+            repeat_mode,
+            track_window,
+          } = state;
+          const {current_track} = track_window;
+
+          setCurrentTrack(current_track);
+          setPlayback(position);
+          setPlaybackState((state) => ({
+            ...state,
+            is_playing: !paused,
+            shuffle: shuffle,
+            repeat: repeat_mode !== 0,
+            progress: position,
+            total_time: duration
+          }))
+
+
+        } catch (err) {
+          console.log(err);
+        }
+      });
+
+      sdk.connect().then((success) => {
+        if (success) {
+          console.log("The Web Playback SDK successfully connected to Spotify!");
+        }
+      });
+
+    })();
+  }, [spotifyToken]);
+
+  const playFromDevice = (device_id) => {
+    const offset = Math.floor(Math.random() * 240);
+    const initialPlaylist = 'spotify:playlist:2nkpYhOstKgPYu5qy6Q5Xy';
+
+    axios.put(
+      `https://api.spotify.com/v1/me/player/play?device_id=${device_id}`,
+      {
+        context_uri: initialPlaylist,
+        offset: {position: offset}
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${spotifyToken}`
+        }
+      }
+    ).then(() => {
+    }).catch(err => console.error(err))
+  }
 
   const addMessage = (newMessage) => {
     setMessages(messages => [...messages, newMessage]);
@@ -104,6 +212,7 @@ const MusicRoom = (props) => {
         time: new Date().toLocaleDateString(),
       }
       ws.current.send(JSON.stringify({...new_message}));
+      setMessage("");
     }
   }
 
@@ -130,7 +239,7 @@ const MusicRoom = (props) => {
     axios.get("/api/get-room" + "?code=" + roomCode, {
       headers: headers
     })
-      .then((response) => { // do something in case of error here
+      .then((response) => {
         setVotesToSkip(response.data.votes_to_skip);
         setGuestCanPause(response.data.guest_can_pause);
         setIsHost(response.data.is_host);
@@ -138,17 +247,6 @@ const MusicRoom = (props) => {
         history.push("/");
       }
     );
-  }
-
-  const getCurrentSong = () => {
-    axios.post("/spotify/current-song", {
-      roomCode: roomCode
-    }, {
-      headers: headers
-    })
-      .then(
-        (response) => setCurrentSong(response.data)
-      ).catch(err => console.log(err));
   }
 
   const leaveButtonPressed = () => {
@@ -222,9 +320,13 @@ const MusicRoom = (props) => {
 
         <Grid item xs={6} align="center">
           {
-            Object.keys(currentSong).length !== 0
+            Object.keys(currentTrack).length !== 0 && deviceID
               ?
-              <MusicPlayer {...currentSong} code={roomCode}/>
+              <MusicPlayer
+                track={currentTrack}
+                code={roomCode}
+                playbackState={playbackState}
+              />
               :
               <div style={{paddingTop: "100px", paddingBottom: "100px"}}>
                 <CircularProgress/>
@@ -236,7 +338,7 @@ const MusicRoom = (props) => {
           <Grid container component={Paper} className="chatSection">
             <Grid item xs={12}>
               <List className="messageArea">
-                {messages.map((obj, i) => renderListItem(obj, i))}
+                {messages.map((obj, i) => renderListItem(obj, `msg${i}`))}
               </List>
               <Divider/>
 
@@ -255,6 +357,7 @@ const MusicRoom = (props) => {
           </Grid>
         </Grid>
 
+
         {isHost ? renderSettingsButton() : null}
 
         <Grid item xs={12} align="center">
@@ -266,9 +369,8 @@ const MusicRoom = (props) => {
             Leave Room
           </Button>
         </Grid>
+
       </Grid>
-
-
     </div>
   );
 }

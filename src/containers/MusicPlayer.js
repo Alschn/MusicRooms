@@ -52,37 +52,41 @@ export default class MusicPlayer extends Component {
   }
 
   render() {
+    let artists_str = "";
+    this.props.track.artists.map(
+      (artist, i, arr) => artists_str += (i !== arr.length - 1 ? `${artist.name}, ` : `${artist.name}`)
+    );
     const songProgressPercentage =
-      (this.props.time / this.props.duration) * 100;
+      (this.props.playbackState.progress / this.props.playbackState.total_time) * 100;
     return (
       <Card className="player">
         <Grid container alignItems="center" justify="center">
           <Grid item align="center" xs={4}>
-            <img src={this.props.image_url} height="100%" width="100%" alt=""/>
+            <img src={this.props.track.album.images[0].url} height="100%" width="100%" alt=""/>
           </Grid>
 
           <Grid item align="center" xs={8}>
             <Typography component="h5" variant="h5">
-              {this.props.title}
+              {this.props.track.name}
             </Typography>
 
             <Typography color="textSecondary" variant="subtitle1">
-              {this.props.artist}
+              {artists_str}
             </Typography>
 
             <div>
               <IconButton
                 onClick={() =>
-                  this.props.is_playing ? this.pauseSong() : this.playSong()
+                  this.props.playbackState.is_playing ? this.pauseSong() : this.playSong()
                 }
               >
-                {this.props.is_playing ? <PauseIcon/> : <PlayArrowIcon/>}
+                {this.props.playbackState.is_playing ? <PauseIcon/> : <PlayArrowIcon/>}
               </IconButton>
               <IconButton onClick={() => this.skipSong()}>
                 <SkipNextIcon/>
               </IconButton>
               <h3>
-                Votes: {this.props.votes} / {this.props.votes_required}
+                {/*Votes: {this.props.votes} / {this.props.votes_required}*/}
               </h3>
             </div>
           </Grid>

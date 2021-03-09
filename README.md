@@ -11,25 +11,25 @@ Music Rooms web application built with Django Rest Framework, Django Channels, W
 </div>
 
 
-#### Used frameworks & libraries
-##### Backend:
+## Used frameworks & libraries
+#### Backend:
 - Django
 - django-rest-framework
 - Django Channels
 - django-rest-auth
 - django-all-auth
-##### Frontend:
+#### Frontend:
 - React
 - Redux
 - Material UI
 - Websocket API
 - axios
-##### External APIs
+#### External APIs
 - Spotify Web API
 - Spotify Web Playback SDK
 
-https://developer.spotify.com/documentation/web-api/
-https://developer.spotify.com/documentation/web-playback-sdk/
+https://developer.spotify.com/documentation/web-api/  
+https://developer.spotify.com/documentation/web-playback-sdk/  
 
 
 ## Installation (dev)
