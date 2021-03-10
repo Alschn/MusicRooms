@@ -16,10 +16,34 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.urls.conf import include
+from django.views.generic import TemplateView
+from spotify_api.views import SpotifyLogin
 
 urlpatterns = [
+    # rest-framework and rest-auth
+    path('api-auth/', include('rest_framework.urls')),
+    path('rest-auth/', include('rest_auth.urls')),
+    path('rest-auth/registration/', include('rest_auth.registration.urls')),
+    # All-auth routes
+    path('accounts/', include('allauth.urls')),
+    # Spotify login route (custom)
+    path('rest-auth/spotify/', SpotifyLogin.as_view(), name='spotify_login'),
+    # Django admin
     path('admin/', admin.site.urls),
+    # Applications
+    path('spotify/', include('spotify_api.urls')),
     path('api/', include('api.urls')),
-    path('', include('frontend.urls')),
-    path('spotify/', include('spotify.urls')),
+    # Frontend
+    # messy rn
+    path('', TemplateView.as_view(template_name='index.html'), name='home'),
+    path('login/', TemplateView.as_view(template_name='index.html')),
+    path('login', TemplateView.as_view(template_name='index.html')),
+    path('join', TemplateView.as_view(template_name='index.html')),
+    path('create', TemplateView.as_view(template_name='index.html')),
+    path('join/', TemplateView.as_view(template_name='index.html')),
+    path('create/', TemplateView.as_view(template_name='index.html')),
+    path('room/<str:roomCode>', TemplateView.as_view(template_name='index.html')),
+
+    # rooms
+    path('rooms/<str:roomCode>', include('rooms.urls'))
 ]
