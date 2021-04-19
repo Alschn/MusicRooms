@@ -1,98 +1,94 @@
-import React, { Component } from "react";
-import {
-  Grid,
-  Typography,
-  Card,
-  IconButton,
-  LinearProgress,
-} from "@material-ui/core";
+import { Card, Grid, IconButton, LinearProgress, makeStyles, Typography, } from "@material-ui/core";
+import PauseIcon from "@material-ui/icons/Pause";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import SkipNextIcon from "@material-ui/icons/SkipNext";
-import PauseIcon from "@material-ui/icons/Pause";
+import React from "react";
+import { BASE_URL } from "../utils/config";
 
 const headers = {
   "Authorization": `Token ${localStorage.getItem('token')}`,
   "Content-Type": "application/json",
 };
 
-export default class MusicPlayer extends Component {
-  constructor(props) {
-    super(props);
-    console.log(props);
-  }
-
-  skipSong() {
+const MusicPlayer = (props) => {
+  const skipSong = () => {
     const requestOptions = {
       method: "POST",
       headers: headers,
     };
-    fetch("/spotify/skip", requestOptions)
+    fetch(BASE_URL + "/spotify/skip", requestOptions)
       .then(() => {
       });
   }
 
-  pauseSong() {
+  const pauseSong = () => {
     const requestOptions = {
       method: "PUT",
       headers: headers,
     };
-    fetch("/spotify/pause", requestOptions)
+    fetch(BASE_URL + "/spotify/pause", requestOptions)
       .then(() => {
       });
   }
 
-  playSong() {
+  const playSong = () => {
     const requestOptions = {
       method: "PUT",
       headers: headers,
     };
-    fetch("/spotify/play", requestOptions)
+    fetch(BASE_URL + "/spotify/play", requestOptions)
       .then(() => {
       });
   }
 
-  render() {
-    let artists_str = "";
-    this.props.track.artists.map(
-      (artist, i, arr) => artists_str += (i !== arr.length - 1 ? `${artist.name}, ` : `${artist.name}`)
-    );
-    const songProgressPercentage =
-      (this.props.playbackState.progress / this.props.playbackState.total_time) * 100;
-    return (
-      <Card className="player">
-        <Grid container alignItems="center" justify="center">
-          <Grid item align="center" xs={4}>
-            <img src={this.props.track.album.images[0].url} height="100%" width="100%" alt=""/>
-          </Grid>
+  const getArtistsString = (artists) => (
+    artists.reduce((total, {name}, currentIndex, arr) => (
+      total += currentIndex !== arr.length - 1 ? `${name}, ` : name
+    ), ``)
+  )
 
-          <Grid item align="center" xs={8}>
-            <Typography component="h5" variant="h5">
-              {this.props.track.name}
-            </Typography>
+  let {playbackState: {is_playing, progress, total_time}, track} = props;
+  let artists_str = getArtistsString(track.artists);
 
-            <Typography color="textSecondary" variant="subtitle1">
-              {artists_str}
-            </Typography>
+  let songProgressPercentage =
+    (progress / total_time) * 100;
 
-            <div>
-              <IconButton
-                onClick={() =>
-                  this.props.playbackState.is_playing ? this.pauseSong() : this.playSong()
-                }
-              >
-                {this.props.playbackState.is_playing ? <PauseIcon/> : <PlayArrowIcon/>}
-              </IconButton>
-              <IconButton onClick={() => this.skipSong()}>
-                <SkipNextIcon/>
-              </IconButton>
-              <h3>
-                {/*Votes: {this.props.votes} / {this.props.votes_required}*/}
-              </h3>
-            </div>
-          </Grid>
+  return (
+    <Card className="player">
+      <Grid container alignItems="center" justify="center">
+        <Grid item align="center" xs={4}>
+          <img src={track.album.images[0].url} height="100%" width="100%" alt=""/>
         </Grid>
-        <LinearProgress variant="determinate" value={songProgressPercentage}/>
-      </Card>
-    );
-  }
+
+        <Grid item align="center" xs={8}>
+          <Typography component="h5" variant="h5">
+            {track.name}
+          </Typography>
+
+          <Typography color="textSecondary" variant="subtitle1">
+            {artists_str}
+          </Typography>
+
+          <div>
+            <IconButton
+              onClick={() =>
+                is_playing ? pauseSong() : playSong()
+              }
+            >
+              {is_playing ? <PauseIcon/> : <PlayArrowIcon/>}
+            </IconButton>
+            <IconButton onClick={() => skipSong()}>
+              <SkipNextIcon/>
+            </IconButton>
+            <h3>
+              {/*Votes: {props.votes} / {props.votes_required}*/}
+            </h3>
+          </div>
+        </Grid>
+      </Grid>
+      <LinearProgress variant="determinate" value={songProgressPercentage}/>
+    </Card>
+  );
 }
+
+export default MusicPlayer;

@@ -1,12 +1,12 @@
 import React from "react";
-import { Route, Switch } from "react-router-dom";
-import Hoc from "./hoc/hoc";
-import Login from "./containers/Login";
-import HomePage from "./containers/HomePage";
-import RoomJoinPage from "./containers/RoomJoinPage";
+import { Route } from "react-router-dom";
 import CreateRoomPage from "./containers/CreateRoomPage";
-import Room from "./containers/Room";
+import HomePage from "./containers/HomePage";
+import RoomJoinPage from "./containers/JoinRoomPage";
+import Login from "./containers/Login";
 import MusicRoom from "./containers/MusicRoom";
+import Room from "./containers/Room";
+import Hoc from "./hoc/hoc";
 
 const BaseRouter = () => (
   <Hoc>

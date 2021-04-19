@@ -1,24 +1,19 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useParams, useHistory } from 'react-router-dom';
-import { connect } from "react-redux";
-import axios from "axios";
 import Button from "@material-ui/core/Button";
 import CircularProgress from "@material-ui/core/CircularProgress";
-import Divider from '@material-ui/core/Divider';
-import Fab from '@material-ui/core/Fab';
 import Grid from '@material-ui/core/Grid';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
-import Paper from '@material-ui/core/Paper';
-import SendIcon from '@material-ui/icons/Send';
-import TextField from '@material-ui/core/TextField';
+import Paper from "@material-ui/core/Paper";
 import Typography from '@material-ui/core/Typography';
+import axios from "axios";
+import Cookies from 'js-cookie';
+import React, { useEffect, useRef, useState } from "react";
+import { connect } from "react-redux";
+import { useHistory, useParams } from 'react-router-dom';
+import useScript from "react-script-hook";
+import { BASE_URL, sample_messages, SOCKET_URL } from "../utils/config";
+import Chat from "./room/Chat"
 import CreateRoomPage from "./CreateRoomPage";
 import MusicPlayer from "./MusicPlayer";
-import { sample_messages, SOCKET_URL } from "../utils/config";
-import useScript from "react-script-hook";
-import Cookies from 'js-cookie';
+import Queue from "./room/Queue";
 
 const spotifyToken = Cookies.get('spotifyAuthToken');
 
@@ -106,7 +101,7 @@ const MusicRoom = (props) => {
   }, [])
 
   useEffect(() => {
-     const waitForSpotifyWebPlaybackSDKToLoad = async () => {
+    const waitForSpotifyWebPlaybackSDKToLoad = async () => {
       return new Promise((resolve) => {
         if (window.Spotify) {
           resolve(window.Spotify);
@@ -216,27 +211,12 @@ const MusicRoom = (props) => {
     }
   }
 
-  const renderListItem = (message, key) => {
-    const {user, text, time} = message;
-    let align;
-    user === 1 ? align = "right" : align = "left";
-    return (
-      <ListItem key={key}>
-        <Grid container>
-          <Grid item xs={12}>
-            <ListItemText align={align} primary={text}/>
-          </Grid>
-          <Grid item xs={12}>
-            <ListItemText align={align} secondary={time}/>
-          </Grid>
-        </Grid>
-      </ListItem>
-    );
+  const handleInputChange = (e) => {
+    setMessage(e.target.value);
   }
 
-
   const getRoomDetails = () => {
-    axios.get("/api/get-room" + "?code=" + roomCode, {
+    axios.get(BASE_URL + "/api/get-room" + "?code=" + roomCode, {
       headers: headers
     })
       .then((response) => {
@@ -250,7 +230,7 @@ const MusicRoom = (props) => {
   }
 
   const leaveButtonPressed = () => {
-    axios.post("/api/leave-room", {
+    axios.post(BASE_URL + "/api/leave-room", {
       roomCode: roomCode
     }, {
       headers: headers
@@ -310,15 +290,15 @@ const MusicRoom = (props) => {
   }
 
   return (
-    <div>
-      <Grid container spacing={1} justify="center">
-        <Grid item xs={12} align="center">
-          <Typography variant="h4" component="h4">
-            Code: {roomCode}
-          </Typography>
-        </Grid>
+    <Grid container spacing={1} justify="center">
+      <Grid item xs={12} align="center">
+        <Typography variant="h4" component="h4">
+          Code: {roomCode}
+        </Typography>
+      </Grid>
 
-        <Grid item xs={6} align="center">
+      <Grid container item xs={8} md={6} lg={8} justify="center" spacing={0}>
+        <Grid item xs={12}>
           {
             Object.keys(currentTrack).length !== 0 && deviceID
               ?
@@ -334,44 +314,30 @@ const MusicRoom = (props) => {
           }
         </Grid>
 
-        <Grid item xs={6} align="center">
-          <Grid container component={Paper} className="chatSection">
-            <Grid item xs={12}>
-              <List className="messageArea">
-                {messages.map((obj, i) => renderListItem(obj, `msg${i}`))}
-              </List>
-              <Divider/>
-
-              <Grid container style={{padding: '15px'}}>
-                <Grid item xs={10}>
-                  <TextField id="outlined-basic-email" label="Type Something" fullWidth
-                             onChange={(e) => setMessage(e.target.value)}/>
-                </Grid>
-                <Grid item xs={2} align="right">
-                  <Fab color="primary" aria-label="add">
-                    <SendIcon onClick={handleSendMessage}/>
-                  </Fab>
-                </Grid>
-              </Grid>
-            </Grid>
-          </Grid>
-        </Grid>
-
-
-        {isHost ? renderSettingsButton() : null}
-
-        <Grid item xs={12} align="center">
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={leaveButtonPressed}
-          >
-            Leave Room
-          </Button>
-        </Grid>
-
+        {deviceID && <Queue />}
       </Grid>
-    </div>
+
+      <Grid container item xs={12} md={6} lg={4} justify="center">
+        <Chat
+          messages={messages}
+          handleChangeInput={handleInputChange}
+          handleSendMessage={handleSendMessage}
+        />
+      </Grid>
+
+      {isHost ? renderSettingsButton() : null}
+
+      <Grid item xs={12} align="center">
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={leaveButtonPressed}
+        >
+          Leave Room
+        </Button>
+      </Grid>
+
+    </Grid>
   );
 }
 

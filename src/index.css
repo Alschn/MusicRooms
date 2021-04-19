@@ -45,7 +45,7 @@ body {
 
 /* Room */
 .chatSection {
-    max-width: 500px;
+    /*max-width: 500px;*/
     height: 80vh;
 }
 
