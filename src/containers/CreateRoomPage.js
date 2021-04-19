@@ -13,6 +13,7 @@ import { Collapse } from "@material-ui/core";
 import Alert from "@material-ui/lab/Alert";
 import { connect } from "react-redux";
 import axios from "axios";
+import { BASE_URL } from "../utils/config";
 
 
 export class CreateRoomPage extends Component {
@@ -49,7 +50,7 @@ export class CreateRoomPage extends Component {
 
   handleCreateButtonPressed = () => {
     const token = localStorage.getItem('token');
-    axios.post("/api/create-room", {
+    axios.post(BASE_URL + "/api/create-room", {
       votes_to_skip: this.state.votesToSkip,
       guest_can_pause: this.state.guestCanPause,
     }, {

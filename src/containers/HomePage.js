@@ -3,7 +3,7 @@ import { Grid, Button, ButtonGroup, Typography, Avatar } from "@material-ui/core
 import { connect } from "react-redux";
 import { authSpotifyLogin } from "../store/actions/auth";
 import { Scopes, SpotifyAuth } from "react-spotify-auth";
-import { REDIRECT_URI, CLIENT_ID } from "../utils/config"
+import { REDIRECT_URI, CLIENT_ID, BASE_URL } from "../utils/config"
 import 'react-spotify-auth/dist/index.css';
 import axios from "axios";
 
@@ -35,7 +35,7 @@ export class HomePage extends Component {
         'Content-Type': 'application/json',
       }
 
-      axios.get("/api/user-in-room", {
+      axios.get(BASE_URL + "/api/user-in-room", {
         headers: headers
       })
         .then(response => {
@@ -49,7 +49,7 @@ export class HomePage extends Component {
         });
 
       const response = await axios.get(
-        '/spotify/get-current-user', {
+        BASE_URL + '/spotify/get-current-user', {
           headers: headers
         }
       )
