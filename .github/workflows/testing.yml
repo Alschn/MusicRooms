@@ -43,7 +43,4 @@ jobs:
         env:
           SECRET_KEY: rAnD0MstR1nGGitHubActionsw0rKflOw
         run: |
-          coverage run manage.py test
-      - name: Tests coverage
-        run: |
-          coverage report
+          python3 manage.py test
