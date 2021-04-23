@@ -1,7 +1,6 @@
 import Button from "@material-ui/core/Button";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import Grid from '@material-ui/core/Grid';
-import Paper from "@material-ui/core/Paper";
 import Typography from '@material-ui/core/Typography';
 import axios from "axios";
 import Cookies from 'js-cookie';
@@ -9,11 +8,13 @@ import React, { useEffect, useRef, useState } from "react";
 import { connect } from "react-redux";
 import { useHistory, useParams } from 'react-router-dom';
 import useScript from "react-script-hook";
+import axiosClient from "../utils/axiosClient";
 import { BASE_URL, sample_messages, SOCKET_URL } from "../utils/config";
-import Chat from "./room/Chat"
 import CreateRoomPage from "./CreateRoomPage";
 import MusicPlayer from "./MusicPlayer";
+import Chat from "./room/Chat"
 import Queue from "./room/Queue";
+import Search from "./room/Search";
 
 const spotifyToken = Cookies.get('spotifyAuthToken');
 
@@ -28,8 +29,11 @@ const MusicRoom = (props) => {
     src: "https://sdk.scdn.co/spotify-player.js",
     onload: () => {
       console.log('Script has been loaded');
-    }
+    },
+    checkForExisting: true,
   });
+
+  const initialVolume = 0.3;
 
   const [sdk, setSdk] = useState(null);
   const [deviceID, setDeviceID] = useState(null);
@@ -54,16 +58,20 @@ const MusicRoom = (props) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState(sample_messages);
 
-  const token = localStorage.getItem('token');
-  const headers = {
-    'Authorization': `Token ${token}`,
-    'Content-Type': 'application/json',
-  }
-
-
   useEffect(() => {
-    getRoomDetails();
-  }, [])
+    const getRoomDetails = () => {
+      axiosClient.get(BASE_URL + "/api/get-room" + "?code=" + roomCode)
+        .then((response) => {
+          setVotesToSkip(response.data.votes_to_skip);
+          setGuestCanPause(response.data.guest_can_pause);
+          setIsHost(response.data.is_host);
+        }).catch(() => {
+          history.push("/");
+        }
+      );
+      getRoomDetails();
+    }
+  }, [roomCode])
 
   useEffect(() => {
     ws.current = new WebSocket(`${SOCKET_URL}/ws/rooms/${roomCode}/`);
@@ -118,7 +126,7 @@ const MusicRoom = (props) => {
       console.log("The Web Playback SDK has loaded.");
       const sdk = new Player({
         name: "Music Rooms - music player",
-        volume: 0.3,
+        volume: initialVolume,
         getOAuthToken: (callback) => {
           callback(spotifyToken);
         },
@@ -214,26 +222,9 @@ const MusicRoom = (props) => {
   const handleInputChange = (e) => {
     setMessage(e.target.value);
   }
-
-  const getRoomDetails = () => {
-    axios.get(BASE_URL + "/api/get-room" + "?code=" + roomCode, {
-      headers: headers
-    })
-      .then((response) => {
-        setVotesToSkip(response.data.votes_to_skip);
-        setGuestCanPause(response.data.guest_can_pause);
-        setIsHost(response.data.is_host);
-      }).catch(() => {
-        history.push("/");
-      }
-    );
-  }
-
   const leaveButtonPressed = () => {
-    axios.post(BASE_URL + "/api/leave-room", {
+    axiosClient.post(BASE_URL + "/api/leave-room", {
       roomCode: roomCode
-    }, {
-      headers: headers
     }).then((response) => {
       props.history.push("/");
     }).catch(err => {
@@ -314,7 +305,8 @@ const MusicRoom = (props) => {
           }
         </Grid>
 
-        {deviceID && <Queue />}
+        {deviceID && <Search/>}
+        {deviceID && <Queue/>}
       </Grid>
 
       <Grid container item xs={12} md={6} lg={4} justify="center">

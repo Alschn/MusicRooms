@@ -1,44 +1,30 @@
-import { Card, Grid, IconButton, LinearProgress, makeStyles, Typography, } from "@material-ui/core";
+import { Card, Grid, IconButton, LinearProgress, Typography, } from "@material-ui/core";
 import PauseIcon from "@material-ui/icons/Pause";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import SkipNextIcon from "@material-ui/icons/SkipNext";
+import SkipPreviousIcon from '@material-ui/icons/SkipPrevious';
 import React from "react";
+import axiosClient from "../utils/axiosClient";
 import { BASE_URL } from "../utils/config";
+import VolumeSlider from "./room/VolumeSlider";
 
-const headers = {
-  "Authorization": `Token ${localStorage.getItem('token')}`,
-  "Content-Type": "application/json",
-};
 
 const MusicPlayer = (props) => {
-  const skipSong = () => {
-    const requestOptions = {
-      method: "POST",
-      headers: headers,
-    };
-    fetch(BASE_URL + "/spotify/skip", requestOptions)
-      .then(() => {
-      });
+  const skipSong = (forward = true) => {
+    axiosClient.post(BASE_URL + "/spotify/skip", {
+      forward: forward,
+    }).then(() => {
+    });
   }
 
   const pauseSong = () => {
-    const requestOptions = {
-      method: "PUT",
-      headers: headers,
-    };
-    fetch(BASE_URL + "/spotify/pause", requestOptions)
-      .then(() => {
-      });
+    axiosClient.put(BASE_URL + "/spotify/pause").then(() => {
+    });
   }
 
   const playSong = () => {
-    const requestOptions = {
-      method: "PUT",
-      headers: headers,
-    };
-    fetch(BASE_URL + "/spotify/play", requestOptions)
-      .then(() => {
-      });
+    axiosClient.put(BASE_URL + "/spotify/play").then(() => {
+    });
   }
 
   const getArtistsString = (artists) => (
@@ -70,6 +56,10 @@ const MusicPlayer = (props) => {
           </Typography>
 
           <div>
+            <IconButton onClick={() => skipSong(false)}>
+              <SkipPreviousIcon/>
+            </IconButton>
+
             <IconButton
               onClick={() =>
                 is_playing ? pauseSong() : playSong()
@@ -83,6 +73,8 @@ const MusicPlayer = (props) => {
             <h3>
               {/*Votes: {props.votes} / {props.votes_required}*/}
             </h3>
+
+            <VolumeSlider/>
           </div>
         </Grid>
       </Grid>
