@@ -11,7 +11,7 @@ import WebSocketInstance from "../utils/websocketClient";
 import CreateRoomPage from "./CreateRoomPage";
 import MusicPlayer from "./MusicPlayer";
 import Chat from "./room/Chat"
-import Queue from "./room/Queue";
+import Listeners from "./room/Listeners";
 import Search from "./room/Search";
 import { WebPlayerContext } from "./spotify/WebPlayer";
 
@@ -163,16 +163,25 @@ const MusicRoom = (props) => {
           }
         </Grid>
 
-        {deviceID && <Search/>}
-        {deviceID && <Queue/>}
+        {deviceID && (
+          <Grid item xs={12}>
+            <Search/>
+          </Grid>
+        )}
       </Grid>
 
-      <Grid container item xs={12} md={6} lg={4} justify="center">
-        <Chat
-          messages={messages}
-          handleChangeInput={handleInputChange}
-          handleSendMessage={handleSendMessage}
-        />
+      <Grid container item xs={12} md={6} lg={4} justify="center" spacing={0}>
+        <Grid item xs={12}>
+          <Listeners/>
+        </Grid>
+        <Grid item xs={12}>
+          <Chat
+            messages={messages}
+            handleChangeInput={handleInputChange}
+            handleSendMessage={handleSendMessage}
+            currentInput={message}
+          />
+        </Grid>
       </Grid>
 
       {isHost && renderSettingsButton()}

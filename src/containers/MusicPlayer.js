@@ -42,7 +42,7 @@ const MusicPlayer = (props) => {
   return (
     <Card className="player">
       <Grid container alignItems="center" justify="center">
-        <Grid item align="center" xs={4}>
+        <Grid item xs={4}>
           <img src={track.album.images[0].url} height="100%" width="100%" alt=""/>
         </Grid>
 

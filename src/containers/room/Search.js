@@ -2,9 +2,10 @@ import { makeStyles } from "@material-ui/core";
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
 import TextField from "@material-ui/core/TextField";
-import axiosClient from "../../utils/axiosClient";
 import React, { useState } from "react";
+import axiosClient from "../../utils/axiosClient";
 import { BASE_URL } from "../../utils/config";
+import Queue from "./Queue";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -16,49 +17,68 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const Search = () => {
-  const classes = useStyles();
-  const [currentQuery, setCurrentQuery] = useState("");
-  const [resultsCount, setResultsCount] = useState(5);
-  const [results, setResults] = useState({});
+    const classes = useStyles();
+    const [currentQuery, setCurrentQuery] = useState("");
+    const [resultsCount, setResultsCount] = useState(5);
+    const [nextPage, setNextPage] = useState(null);
+    const [results, setResults] = useState([]);
 
-  const requestItemsSearch = () => {
-    axiosClient.post(BASE_URL + "/spotify/search", {
-      query: JSON.stringify(currentQuery),
-      type: "track",
-    }).then((response) => {
-      const {data} = response;
-      setResults(data);
-      console.log(data);
-    }).catch(err => console.error(err))
-  }
+    const [queue, setQueue] = useState([]);
 
-  const handleSearchChange = e => {
-    setCurrentQuery(e.target.value);
-  }
+    const addToQueue = (item) => {
+      setQueue((state) => [...state, item])
+    }
 
-  const handleSearchConfirm = e => {
-    if (e.key === "Enter") requestItemsSearch();
-  }
+    const requestItemsSearch = () => {
+      axiosClient.post(BASE_URL + "/spotify/search", {
+        query: JSON.stringify(currentQuery),
+        type: "track",
+      }).then((response) => {
+        const {
+          data: {
+            tracks: {items}
+          }
+        } = response;
+        setResults(items);
+        // console.log(items);
+      }).catch(err => console.error(err))
+    }
 
-  return (
-    <div className={classes.root}>
-      <Grid item xs={12} component={Paper}>
-        <TextField
-          id="standard-search"
-          label="Search field"
-          type="search"
-          onChange={e => handleSearchChange(e)}
-          onKeyPress={e => handleSearchConfirm(e)}
-          className={classes.root}
-        />
+    const handleSearchChange = e => {
+      setCurrentQuery(e.target.value);
+    }
+
+    const handleSearchConfirm = e => {
+      if (e.key === "Enter") requestItemsSearch();
+    }
+
+    return (
+      <Grid container component={Paper}>
+        <Grid xs={12}>
+          <TextField
+            id="standard-search"
+            label="Search field"
+            type="search"
+            onChange={e => handleSearchChange(e)}
+            onKeyPress={e => handleSearchConfirm(e)}
+            className={classes.root}
+          />
+        </Grid>
+
+        <Grid container xs={12} component={Paper}>
+
+          {results && results.map((item) => (
+            <Grid item xs={3} onClick={() => addToQueue(item)}>
+              <img src={item.album.images[2].url} alt=""/>
+              {JSON.stringify(item.name)}
+            </Grid>))}
+        </Grid>
+
+        {queue.length !== 0 && (<Queue queue={queue}/>)}
       </Grid>
+    );
 
-      <Grid item xs={12} component={Paper}>
-        Results
-      </Grid>
-    </div>
-
-  );
-};
+  }
+;
 
 export default Search;

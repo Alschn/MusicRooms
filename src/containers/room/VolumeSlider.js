@@ -82,10 +82,11 @@ const VolumeSlider = () => {
           </Grid>
           <Grid item xs>
             <CustomSlider
-              defaultValue={playerVolume}
+              defaultValue={30}
               playerVolume={playerVolume}
               onChange={handleChange}
               aria-labelledby="continuous-slider"
+              key='custom-slider'
             />
           </Grid>
           <Grid item>

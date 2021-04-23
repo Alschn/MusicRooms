@@ -1,14 +1,14 @@
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
-import React, { useState } from "react";
+import React from "react";
 
-const Queue = (props) => {
-  const [tracksQueue, setTracksQueue] = useState([]);
+const Queue = ({queue}) => {
 
   return (
     <Grid item xs={12} component={Paper}>
       <h1>Queue</h1>
-      {tracksQueue && tracksQueue.map((track) => (<h2>{track}</h2>))}
+      {queue && queue.map((item) => (<p onClick={() => {
+      }}>{JSON.stringify(item.name)}</p>))}
     </Grid>
   )
 }

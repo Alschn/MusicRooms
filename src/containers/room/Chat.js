@@ -1,3 +1,4 @@
+import { makeStyles } from "@material-ui/core";
 import Divider from "@material-ui/core/Divider";
 import Fab from "@material-ui/core/Fab";
 import Grid from "@material-ui/core/Grid";
@@ -9,8 +10,22 @@ import TextField from "@material-ui/core/TextField";
 import SendIcon from "@material-ui/icons/Send";
 import React from "react";
 
-const Chat = (props) => {
-  let {messages, handleChangeInput, handleSendMessage} = props;
+const useStyles = makeStyles(theme => ({
+  messageArea: {
+    height: "60vh",
+    overflowY: "auto",
+  },
+  inputArea: {
+    padding: 15,
+  }
+}));
+
+const Chat = ({currentInput, messages, handleChangeInput, handleSendMessage}) => {
+  const classes = useStyles();
+
+  const submitMessageWithEnter = (e) => {
+    if (e.key === "Enter") handleSendMessage();
+  }
 
   const renderListItem = (message, key) => {
     const {user, text, time} = message;
@@ -31,17 +46,17 @@ const Chat = (props) => {
   }
 
   return (
-    <Grid container component={Paper} className="chatSection">
+    <Grid container component={Paper}>
       <Grid item xs={12}>
-        <List className="messageArea">
+        <List className={classes.messageArea}>
           {messages.map((obj, i) => renderListItem(obj, `msg${i}`))}
         </List>
         <Divider/>
 
-        <Grid container style={{padding: '15px'}}>
+        <Grid container className={classes.inputArea}>
           <Grid item xs={10}>
             <TextField id="outlined-basic-email" label="Type Something" fullWidth
-                       onChange={handleChangeInput}/>
+                       onChange={handleChangeInput} value={currentInput} onKeyPress={submitMessageWithEnter}/>
           </Grid>
           <Grid item xs={2} align="right">
             <Fab color="primary" aria-label="add">
