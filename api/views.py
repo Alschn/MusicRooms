@@ -22,7 +22,7 @@ class GetRoom(APIView):
     lookup_url_kwarg = 'code'  # pass a parameter called code
 
     def get(self, request, format=None):
-        code = request.GET.get(self.lookup_url_kwarg)
+        code = request.GET[self.lookup_url_kwarg]
         user = request.user
         if code is not None:
             code.rstrip()

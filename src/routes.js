@@ -6,6 +6,7 @@ import RoomJoinPage from "./containers/JoinRoomPage";
 import Login from "./containers/Login";
 import MusicRoom from "./containers/MusicRoom";
 import Room from "./containers/Room";
+import WebPlayer from "./containers/spotify/WebPlayer";
 import Hoc from "./hoc/hoc";
 
 const BaseRouter = () => (
@@ -15,7 +16,11 @@ const BaseRouter = () => (
     <Route path="/join" component={RoomJoinPage}/>
     <Route path="/create" component={CreateRoomPage}/>
     <Route path="/room/:roomCode" component={Room}/>
-    <Route path="/rooms/:roomCode" component={MusicRoom}/>
+    <Route path="/rooms/:roomCode">
+      <WebPlayer>
+        <MusicRoom/>
+      </WebPlayer>
+    </Route>
   </Hoc>
 );
 

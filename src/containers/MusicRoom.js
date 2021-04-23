@@ -2,51 +2,26 @@ import Button from "@material-ui/core/Button";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
-import axios from "axios";
-import Cookies from 'js-cookie';
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { useHistory, useParams } from 'react-router-dom';
-import useScript from "react-script-hook";
 import axiosClient from "../utils/axiosClient";
-import { BASE_URL, sample_messages, SOCKET_URL } from "../utils/config";
+import { BASE_URL, sample_messages } from "../utils/config";
+import WebSocketInstance from "../utils/websocketClient";
 import CreateRoomPage from "./CreateRoomPage";
 import MusicPlayer from "./MusicPlayer";
 import Chat from "./room/Chat"
 import Queue from "./room/Queue";
 import Search from "./room/Search";
-
-const spotifyToken = Cookies.get('spotifyAuthToken');
+import { WebPlayerContext } from "./spotify/WebPlayer";
 
 const MusicRoom = (props) => {
   // Hooks
   let history = useHistory();
   const {roomCode} = useParams();
-  const ws = useRef(null);
 
-  // Spotify Web Playback SDK
-  const [loading, error] = useScript({
-    src: "https://sdk.scdn.co/spotify-player.js",
-    onload: () => {
-      console.log('Script has been loaded');
-    },
-    checkForExisting: true,
-  });
-
-  const initialVolume = 0.3;
-
-  const [sdk, setSdk] = useState(null);
-  const [deviceID, setDeviceID] = useState(null);
-
-  const [currentTrack, setCurrentTrack] = useState({});
-  const [playback, setPlayback] = useState(0);
-  const [playbackState, setPlaybackState] = useState({
-    play: false,
-    shuffle: false,
-    repeat: false,
-    progress: 0,
-    total_time: 0,
-  });
+  // Props from parent - Web Player Context
+  const {sdk, deviceID, playback, playbackState, currentTrack} = useContext(WebPlayerContext);
 
   // room state
   const [votesToSkip, setVotesToSkip] = useState(2);
@@ -69,139 +44,21 @@ const MusicRoom = (props) => {
           history.push("/");
         }
       );
-      getRoomDetails();
     }
-  }, [roomCode])
+    getRoomDetails();
+  }, [])
 
   useEffect(() => {
-    ws.current = new WebSocket(`${SOCKET_URL}/ws/rooms/${roomCode}/`);
+    WebSocketInstance.addCallbacks(() => {
+    }, addMessage);
+  }, [])
 
-    ws.current.onopen = () => {
-      console.log("WebSocket open");
-    }
-
-    ws.current.onclose = () => {
-      console.log("WebSocket closed")
-    }
-
+  useEffect(() => {
+    WebSocketInstance.connect(roomCode);
     return () => {
-      ws.current.close();
+      WebSocketInstance.disconnect();
     }
   }, [])
-
-  useEffect(() => {
-    if (!ws.current) return;
-
-    ws.current.onmessage = e => {
-      const parsedData = JSON.parse(e.data);
-      console.log(parsedData);
-      if (parsedData.command === "new_message") {
-        const {text, time} = parsedData;
-        addMessage({text, time, user: 1});
-      } else if (parsedData.command === "request_fetch") {
-        if (isHost) {
-          // send message with current player state
-        }
-      } else if (parsedData.command === "fetch_current_song" && !isHost) {
-        // fetch host's player state
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    const waitForSpotifyWebPlaybackSDKToLoad = async () => {
-      return new Promise((resolve) => {
-        if (window.Spotify) {
-          resolve(window.Spotify);
-        } else {
-          window.onSpotifyWebPlaybackSDKReady = () => {
-            resolve(window.Spotify);
-          };
-        }
-      });
-    }
-
-    (async () => {
-      const {Player} = await waitForSpotifyWebPlaybackSDKToLoad();
-      console.log("The Web Playback SDK has loaded.");
-      const sdk = new Player({
-        name: "Music Rooms - music player",
-        volume: initialVolume,
-        getOAuthToken: (callback) => {
-          callback(spotifyToken);
-        },
-      });
-
-      sdk.on('authentication_error', ({message}) => {
-        console.error('Failed to authenticate', message)
-      })
-
-      setSdk(sdk);
-
-      sdk.addListener("ready", ({device_id}) => {
-        console.log('Ready with device: ' + device_id);
-        setDeviceID(device_id);
-
-        playFromDevice(device_id);
-      });
-
-      sdk.addListener("player_state_changed", (state) => {
-        try {
-          const {
-            duration,
-            position,
-            paused,
-            shuffle,
-            repeat_mode,
-            track_window,
-          } = state;
-          const {current_track} = track_window;
-
-          setCurrentTrack(current_track);
-          setPlayback(position);
-          setPlaybackState((state) => ({
-            ...state,
-            is_playing: !paused,
-            shuffle: shuffle,
-            repeat: repeat_mode !== 0,
-            progress: position,
-            total_time: duration
-          }))
-
-
-        } catch (err) {
-          console.log(err);
-        }
-      });
-
-      sdk.connect().then((success) => {
-        if (success) {
-          console.log("The Web Playback SDK successfully connected to Spotify!");
-        }
-      });
-
-    })();
-  }, [spotifyToken]);
-
-  const playFromDevice = (device_id) => {
-    const offset = Math.floor(Math.random() * 240);
-    const initialPlaylist = 'spotify:playlist:2nkpYhOstKgPYu5qy6Q5Xy';
-
-    axios.put(
-      `https://api.spotify.com/v1/me/player/play?device_id=${device_id}`,
-      {
-        context_uri: initialPlaylist,
-        offset: {position: offset}
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${spotifyToken}`
-        }
-      }
-    ).then(() => {
-    }).catch(err => console.error(err))
-  }
 
   const addMessage = (newMessage) => {
     setMessages(messages => [...messages, newMessage]);
@@ -214,7 +71,7 @@ const MusicRoom = (props) => {
         text: message,
         time: new Date().toLocaleDateString(),
       }
-      ws.current.send(JSON.stringify({...new_message}));
+      WebSocketInstance.sendMessage(new_message);
       setMessage("");
     }
   }
@@ -222,6 +79,7 @@ const MusicRoom = (props) => {
   const handleInputChange = (e) => {
     setMessage(e.target.value);
   }
+
   const leaveButtonPressed = () => {
     axiosClient.post(BASE_URL + "/api/leave-room", {
       roomCode: roomCode
@@ -317,7 +175,7 @@ const MusicRoom = (props) => {
         />
       </Grid>
 
-      {isHost ? renderSettingsButton() : null}
+      {isHost && renderSettingsButton()}
 
       <Grid item xs={12} align="center">
         <Button
