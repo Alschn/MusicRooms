@@ -30,16 +30,19 @@ def refresh_spotify_token(session_id):
     pass
 
 
-def execute_spotify_api_call(user, endpoint, post_=False, put_=False):
+def execute_spotify_api_call(user, endpoint, post_=False, put_=False, other_base_url=None):
     spotify_token = get_user_tokens(user)
     headers = {'Content-Type': 'application/json', 'Authorization': "Bearer " + spotify_token}
 
-    if post_:
-        post(BASE_URL + endpoint, headers=headers)
-    elif put_:
-        put(BASE_URL + endpoint, headers=headers)
+    URL = BASE_URL if not other_base_url else other_base_url
 
-    response = get(BASE_URL + endpoint, {}, headers=headers)  # else it is get request
+    if post_:
+        post(URL + endpoint, headers=headers)
+    elif put_:
+        put(URL + endpoint, headers=headers)
+
+    # else it is get request
+    response = get(URL + endpoint, {}, headers=headers)
     try:
         return response.json()
     except Exception as e:
@@ -54,5 +57,17 @@ def pause_song(user):
     return execute_spotify_api_call(user, "player/pause", put_=True)
 
 
+def prev_song(user):
+    return execute_spotify_api_call(user, "player/previous", post_=True)
+
+
 def skip_song(user):
     return execute_spotify_api_call(user, "player/next", post_=True)
+
+
+def set_volume(user, value):
+    return execute_spotify_api_call(user, f"player/volume?volume_percent={value}", put_=True)
+
+
+def search_for_items(user, query, types):
+    return execute_spotify_api_call(user, f"search?q={query}&type={types}", other_base_url="https://api.spotify.com/v1/")
