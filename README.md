@@ -80,3 +80,6 @@ npm run build
 - Displaying all participants inside the room
 - Search and queue components
 - Storing chat messages, chat styling
+- Add api, rooms, spotify_api (if it is possible) tests
+- Setup github workflow for node
+- Learn how to write frontend tests

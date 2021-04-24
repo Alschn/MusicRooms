@@ -21,8 +21,8 @@ class GetRoom(APIView):
     serializer_class = RoomSerializer
     lookup_url_kwarg = 'code'  # pass a parameter called code
 
-    def get(self, request, format=None):
-        code = request.GET[self.lookup_url_kwarg]
+    def get(self, request):
+        code = request.GET.get(self.lookup_url_kwarg, None)
         user = request.user
         if code is not None:
             code.rstrip()
@@ -40,9 +40,9 @@ class JoinRoom(APIView):
     permission_classes = [IsAuthenticated]
     lookup_url_kwarg = 'code'
 
-    def post(self, request, format=None):
+    def post(self, request):
         user = request.user
-        code = request.data.get(self.lookup_url_kwarg)
+        code = request.data.get(self.lookup_url_kwarg, None)
         if code is not None:
             room_result = Room.objects.filter(code=code)
             if room_result.exists():
@@ -62,7 +62,7 @@ class CreateRoomView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CreateRoomSerializer
 
-    def post(self, request, format=None):
+    def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             guest_can_pause = serializer.data.get('guest_can_pause')
@@ -88,7 +88,7 @@ class CreateRoomView(APIView):
 class UserInRoom(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, format=None):
+    def get(self, request):
         user = request.user
         if user.room:
             code = user.room.code
@@ -103,7 +103,7 @@ class UserInRoom(APIView):
 class LeaveRoom(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, format=None):
+    def post(self, request):
         try:
             code = request.data.get('roomCode').rstrip()
         except AttributeError:
