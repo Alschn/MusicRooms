@@ -34,6 +34,7 @@ const CustomSlider = withStyles({
     color: "#cccccc",
     height: 4,
   },
+  active: {},
   thumb: {
     height: 15,
     width: 15,
@@ -83,7 +84,6 @@ const VolumeSlider = () => {
           <Grid item xs>
             <CustomSlider
               defaultValue={30}
-              playerVolume={playerVolume}
               onChange={handleChange}
               aria-labelledby="continuous-slider"
               key='custom-slider'

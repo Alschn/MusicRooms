@@ -2,7 +2,7 @@ import Button from "@material-ui/core/Button";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
-import React, { useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { useHistory, useParams } from 'react-router-dom';
 import axiosClient from "../utils/axiosClient";
@@ -21,7 +21,7 @@ const MusicRoom = (props) => {
   const {roomCode} = useParams();
 
   // Props from parent - Web Player Context
-  const {sdk, deviceID, playback, playbackState, currentTrack} = useContext(WebPlayerContext);
+  const {sdk, deviceID, playback, playbackState, currentTrack, playFromDevice} = useContext(WebPlayerContext);
 
   // room state
   const [votesToSkip, setVotesToSkip] = useState(2);
@@ -33,20 +33,25 @@ const MusicRoom = (props) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState(sample_messages);
 
+  const getRoomDetails = useCallback(() => {
+    axiosClient.get(BASE_URL + "/api/get-room" + "?code=" + roomCode)
+      .then((response) => {
+        setVotesToSkip(response.data.votes_to_skip);
+        setGuestCanPause(response.data.guest_can_pause);
+        setIsHost(response.data.is_host);
+      }).catch(() => {
+        history.push("/");
+      }
+    );
+  }, [roomCode]);
+
   useEffect(() => {
-    const getRoomDetails = () => {
-      axiosClient.get(BASE_URL + "/api/get-room" + "?code=" + roomCode)
-        .then((response) => {
-          setVotesToSkip(response.data.votes_to_skip);
-          setGuestCanPause(response.data.guest_can_pause);
-          setIsHost(response.data.is_host);
-        }).catch(() => {
-          history.push("/");
-        }
-      );
-    }
     getRoomDetails();
-  }, [])
+  }, [getRoomDetails])
+
+  useEffect(() => {
+    if (deviceID) playFromDevice(deviceID);
+  }, [deviceID])
 
   useEffect(() => {
     WebSocketInstance.addCallbacks(() => {
@@ -84,7 +89,8 @@ const MusicRoom = (props) => {
     axiosClient.post(BASE_URL + "/api/leave-room", {
       roomCode: roomCode
     }).then((response) => {
-      props.history.push("/");
+      sdk.disconnect();
+      history.push("/");
     }).catch(err => {
       console.log(err);
     });

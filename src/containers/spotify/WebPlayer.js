@@ -97,8 +97,6 @@ const WebPlayer = ({children}) => {
       sdk.addListener("ready", ({device_id}) => {
         console.log('Ready with device: ' + device_id);
         setDeviceID(device_id);
-
-        playFromDevice(device_id);
       });
 
       sdk.addListener("player_state_changed", (state) => {
@@ -144,7 +142,8 @@ const WebPlayer = ({children}) => {
       currentTrack,
       playback,
       playbackState,
-      initialVolume
+      initialVolume,
+      playFromDevice,
     }}>
       {children}
     </WebPlayerContext.Provider>

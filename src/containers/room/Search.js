@@ -54,7 +54,7 @@ const Search = () => {
 
     return (
       <Grid container component={Paper}>
-        <Grid xs={12}>
+        <Grid item xs={12}>
           <TextField
             id="standard-search"
             label="Search field"
@@ -65,7 +65,7 @@ const Search = () => {
           />
         </Grid>
 
-        <Grid container xs={12} component={Paper}>
+        <Grid container item xs={12} component={Paper}>
 
           {results && results.map((item) => (
             <Grid item xs={3} onClick={() => addToQueue(item)}>

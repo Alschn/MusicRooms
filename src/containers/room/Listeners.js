@@ -37,7 +37,7 @@ const Listeners = (props) => {
           Listeners ({listeners.length}):
         </ListSubheader>}
     >
-      {listeners.map((listener) => (<ListItem>
+      {listeners.map((listener, index) => (<ListItem key={`listener${index}`}>
         <ListItemText>{listener.name}</ListItemText>
       </ListItem>))}
     </List>

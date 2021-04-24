@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MinValueValidator
 from django.db import models
 import random
 import string
@@ -25,7 +26,7 @@ class Room(models.Model):
     code = models.CharField(max_length=8, default=generate_unique_code, unique=True)
     host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='host')
     guest_can_pause = models.BooleanField(default=False, null=False)
-    votes_to_skip = models.IntegerField(default=1, null=False)
+    votes_to_skip = models.PositiveIntegerField(default=1, null=False, validators=[MinValueValidator(1)])
     created_at = models.DateTimeField(auto_now_add=True)
     current_song = models.CharField(max_length=100, null=True)
 
