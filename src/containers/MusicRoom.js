@@ -114,7 +114,7 @@ const MusicRoom = (props) => {
 
   const renderSettings = () => {
     return (
-      <Grid container spacing={1}>
+      <Grid container className="centeredContainer">
         <Grid item xs={12} align="center">
           <CreateRoomPage
             update={true}
@@ -122,17 +122,8 @@ const MusicRoom = (props) => {
             guestCanPause={guestCanPause}
             roomCode={roomCode}
             updateCallback={getRoomDetails}
+            updateShowSettings={updateShowSettings}
           />
-        </Grid>
-
-        <Grid item xs={12} align="center">
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={() => updateShowSettings(false)}
-          >
-            Close
-          </Button>
         </Grid>
       </Grid>
     );
@@ -157,7 +148,7 @@ const MusicRoom = (props) => {
   }
 
   return (
-    <Grid container spacing={1} justify="center">
+    <Grid container justify="center">
       <Grid item xs={12} align="center">
         <Typography variant="h4" component="h4">
           Code: {roomCode}

@@ -31,12 +31,10 @@ class CustomLayout extends Component {
         )}
 
         {this.props.children}
-
       </div>
     );
   }
 }
-
 
 const mapStateToProps = state => {
   return {

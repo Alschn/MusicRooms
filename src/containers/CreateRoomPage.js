@@ -78,7 +78,7 @@ export class CreateRoomPage extends Component {
 
   renderCreateButtons() {
     return (
-      <Grid container spacing={1}>
+      <Grid container>
         <Grid item xs={12} align="center">
           <Button
             color="primary"
@@ -100,14 +100,23 @@ export class CreateRoomPage extends Component {
 
   renderUpdateButtons() {
     return (
-      <Grid container spacing={1}>
-        <Grid item xs={12} align="center">
+      <Grid container direction="column">
+        <Grid item xs={12}>
           <Button
             color="primary"
             variant="contained"
             onClick={this.handleUpdateButtonPressed}
           >
             Update Room
+          </Button>
+        </Grid>
+        <Grid item xs={12}>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => this.props.updateShowSettings(false)}
+          >
+            Close
           </Button>
         </Grid>
       </Grid>
@@ -118,7 +127,7 @@ export class CreateRoomPage extends Component {
     const title = this.props.update ? "Update Room" : "Create Room";
 
     return (
-      <Grid container spacing={1}>
+      <Grid container className="centeredContainer">
         <Grid item xs={12} align="center">
           <Collapse
             in={this.state.errorMsg !== "" || this.state.successMsg !== ""}
@@ -153,8 +162,8 @@ export class CreateRoomPage extends Component {
 
         <Grid item xs={12} align="center">
           <FormControl component="fieldset">
-            <FormHelperText>
-              <div align="center">Guest Control of Playback State</div>
+            <FormHelperText style={{textAlign: "center"}}>
+              Guest Control of Playback State
             </FormHelperText>
             <RadioGroup
               row
@@ -190,8 +199,8 @@ export class CreateRoomPage extends Component {
                 style: {textAlign: "center"},
               }}
             />
-            <FormHelperText>
-              <div align="center">Votes Required To Skip Song</div>
+            <FormHelperText style={{textAlign: "center"}}>
+              Votes Required To Skip Song
             </FormHelperText>
           </FormControl>
         </Grid>
