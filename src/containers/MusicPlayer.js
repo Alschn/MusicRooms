@@ -3,13 +3,16 @@ import PauseIcon from "@material-ui/icons/Pause";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import SkipNextIcon from "@material-ui/icons/SkipNext";
 import SkipPreviousIcon from '@material-ui/icons/SkipPrevious';
-import React from "react";
+import React, { useContext } from "react";
 import axiosClient from "../utils/axiosClient";
 import { BASE_URL } from "../utils/config";
 import VolumeSlider from "./room/VolumeSlider";
+import { WebPlayerContext } from "./spotify/WebPlayer";
 
 
-const MusicPlayer = (props) => {
+const MusicPlayer = () => {
+  const {playbackState, currentTrack} = useContext(WebPlayerContext);
+
   const skipSong = (forward = true) => {
     axiosClient.post(BASE_URL + "/spotify/skip", {
       forward: forward,
@@ -33,7 +36,9 @@ const MusicPlayer = (props) => {
     ), ``)
   )
 
-  let {playbackState: {is_playing, progress, total_time}, track} = props;
+  let {is_playing, progress, total_time} = playbackState;
+  let track = currentTrack;
+
   let artists_str = getArtistsString(track.artists);
 
   let songProgressPercentage =

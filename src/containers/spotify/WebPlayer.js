@@ -44,6 +44,8 @@ const WebPlayer = ({children}) => {
     total_time: 0,
   });
 
+  const [canLoadSDK, setCanLoadSDK] = useState(false);
+
   const playFromDevice = (device_id) => {
     const offset = Math.floor(Math.random() * 240);
     const initialPlaylist = 'spotify:playlist:2nkpYhOstKgPYu5qy6Q5Xy';
@@ -65,75 +67,77 @@ const WebPlayer = ({children}) => {
   }
 
   useEffect(() => {
-    const waitForSpotifyWebPlaybackSDKToLoad = async () => {
-      return new Promise((resolve) => {
-        if (window.Spotify) {
-          resolve(window.Spotify);
-        } else {
-          window.onSpotifyWebPlaybackSDKReady = () => {
+    if (canLoadSDK) {
+      const waitForSpotifyWebPlaybackSDKToLoad = async () => {
+        return new Promise((resolve) => {
+          if (window.Spotify) {
             resolve(window.Spotify);
-          };
-        }
-      });
+          } else {
+            window.onSpotifyWebPlaybackSDKReady = () => {
+              resolve(window.Spotify);
+            };
+          }
+        });
+      }
+
+      (async () => {
+        const {Player} = await waitForSpotifyWebPlaybackSDKToLoad();
+        console.log("The Web Playback SDK has loaded.");
+        const sdk = new Player({
+          name: "Music Rooms - music player",
+          volume: initialVolume,
+          getOAuthToken: (callback) => {
+            callback(spotifyToken);
+          },
+        });
+
+        sdk.on('authentication_error', ({message}) => {
+          console.error('Failed to authenticate', message)
+        })
+
+        setSdk(sdk);
+
+        sdk.addListener("ready", ({device_id}) => {
+          console.log('Ready with device: ' + device_id);
+          setDeviceID(device_id);
+        });
+
+        sdk.addListener("player_state_changed", (state) => {
+          try {
+            const {
+              duration,
+              position,
+              paused,
+              shuffle,
+              repeat_mode,
+              track_window,
+            } = state;
+            const {current_track} = track_window;
+
+            setCurrentTrack(current_track);
+            setPlayback(position);
+            setPlaybackState((state) => ({
+              ...state,
+              is_playing: !paused,
+              shuffle: shuffle,
+              repeat: repeat_mode !== 0,
+              progress: position,
+              total_time: duration
+            }))
+          } catch (err) {
+            console.log(err);
+          }
+        });
+
+        sdk.connect().then((success) => {
+          if (success) {
+            console.log("The Web Playback SDK successfully connected to Spotify!");
+          }
+        });
+
+      })();
     }
-
-    (async () => {
-      const {Player} = await waitForSpotifyWebPlaybackSDKToLoad();
-      console.log("The Web Playback SDK has loaded.");
-      const sdk = new Player({
-        name: "Music Rooms - music player",
-        volume: initialVolume,
-        getOAuthToken: (callback) => {
-          callback(spotifyToken);
-        },
-      });
-
-      sdk.on('authentication_error', ({message}) => {
-        console.error('Failed to authenticate', message)
-      })
-
-      setSdk(sdk);
-
-      sdk.addListener("ready", ({device_id}) => {
-        console.log('Ready with device: ' + device_id);
-        setDeviceID(device_id);
-      });
-
-      sdk.addListener("player_state_changed", (state) => {
-        try {
-          const {
-            duration,
-            position,
-            paused,
-            shuffle,
-            repeat_mode,
-            track_window,
-          } = state;
-          const {current_track} = track_window;
-
-          setCurrentTrack(current_track);
-          setPlayback(position);
-          setPlaybackState((state) => ({
-            ...state,
-            is_playing: !paused,
-            shuffle: shuffle,
-            repeat: repeat_mode !== 0,
-            progress: position,
-            total_time: duration
-          }))
-        } catch (err) {
-          console.log(err);
-        }
-      });
-
-      sdk.connect().then((success) => {
-        if (success) {
-          console.log("The Web Playback SDK successfully connected to Spotify!");
-        }
-      });
-
-    })();
-  }, [spotifyToken]);
+  }, [spotifyToken, canLoadSDK]);
 
   return (
     <WebPlayerContext.Provider value={{
@@ -144,6 +148,7 @@ const WebPlayer = ({children}) => {
       playbackState,
       initialVolume,
       playFromDevice,
+      setCanLoadSDK,
     }}>
       {children}
     </WebPlayerContext.Provider>

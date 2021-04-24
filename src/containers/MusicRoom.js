@@ -21,7 +21,7 @@ const MusicRoom = (props) => {
   const {roomCode} = useParams();
 
   // Props from parent - Web Player Context
-  const {sdk, deviceID, playback, playbackState, currentTrack, playFromDevice} = useContext(WebPlayerContext);
+  const {sdk, deviceID, currentTrack, playFromDevice, setCanLoadSDK} = useContext(WebPlayerContext);
 
   // room state
   const [votesToSkip, setVotesToSkip] = useState(2);
@@ -33,12 +33,17 @@ const MusicRoom = (props) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState(sample_messages);
 
+  // initialize websocket connection only if user is in valid room
+  const [canJoinChat, setCanJoinChat] = useState(false);
+
   const getRoomDetails = useCallback(() => {
     axiosClient.get(BASE_URL + "/api/get-room" + "?code=" + roomCode)
       .then((response) => {
         setVotesToSkip(response.data.votes_to_skip);
         setGuestCanPause(response.data.guest_can_pause);
         setIsHost(response.data.is_host);
+        setCanLoadSDK(true);
+        setCanJoinChat(true);
       }).catch(() => {
         history.push("/");
       }
@@ -54,16 +59,23 @@ const MusicRoom = (props) => {
   }, [deviceID])
 
   useEffect(() => {
-    WebSocketInstance.addCallbacks(() => {
-    }, addMessage);
-  }, [])
+    if (canJoinChat) {
+      WebSocketInstance.addCallbacks(() => {
+      }, addMessage);
+    }
+    return () => {
+      WebSocketInstance.callbacks = {};
+    }
+  }, [canJoinChat])
 
   useEffect(() => {
-    WebSocketInstance.connect(roomCode);
-    return () => {
-      WebSocketInstance.disconnect();
+    if (canJoinChat) {
+      WebSocketInstance.connect(roomCode);
+      return () => {
+        WebSocketInstance.disconnect();
+      }
     }
-  }, [])
+  }, [canJoinChat])
 
   const addMessage = (newMessage) => {
     setMessages(messages => [...messages, newMessage]);
@@ -158,9 +170,7 @@ const MusicRoom = (props) => {
             Object.keys(currentTrack).length !== 0 && deviceID
               ?
               <MusicPlayer
-                track={currentTrack}
                 code={roomCode}
-                playbackState={playbackState}
               />
               :
               <div style={{paddingTop: "100px", paddingBottom: "100px"}}>
