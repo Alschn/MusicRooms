@@ -1,12 +1,13 @@
 import React from "react";
-import { Route, Switch } from "react-router-dom";
-import Hoc from "./hoc/hoc";
-import Login from "./containers/Login";
-import HomePage from "./containers/HomePage";
-import RoomJoinPage from "./containers/RoomJoinPage";
+import { Route } from "react-router-dom";
 import CreateRoomPage from "./containers/CreateRoomPage";
-import Room from "./containers/Room";
+import HomePage from "./containers/HomePage";
+import RoomJoinPage from "./containers/JoinRoomPage";
+import Login from "./containers/Login";
 import MusicRoom from "./containers/MusicRoom";
+import Room from "./containers/Room";
+import WebPlayer from "./containers/spotify/WebPlayer";
+import Hoc from "./hoc/hoc";
 
 const BaseRouter = () => (
   <Hoc>
@@ -15,7 +16,11 @@ const BaseRouter = () => (
     <Route path="/join" component={RoomJoinPage}/>
     <Route path="/create" component={CreateRoomPage}/>
     <Route path="/room/:roomCode" component={Room}/>
-    <Route path="/rooms/:roomCode" component={MusicRoom}/>
+    <Route path="/rooms/:roomCode">
+      <WebPlayer>
+        <MusicRoom/>
+      </WebPlayer>
+    </Route>
   </Hoc>
 );
 

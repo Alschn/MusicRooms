@@ -5,6 +5,7 @@ import MusicPlayer from "./MusicPlayer";
 import axios from "axios";
 import { connect } from "react-redux";
 import CircularProgress from "@material-ui/core/CircularProgress";
+import { BASE_URL } from "../utils/config";
 
 
 export class Room extends Component {
@@ -35,7 +36,7 @@ export class Room extends Component {
       'Authorization': `Token ${token}`,
       'Content-Type': 'application/json',
     }
-    axios.get("/api/get-room" + "?code=" + this.roomCode, {
+    axios.get(BASE_URL + "/api/get-room" + "?code=" + this.roomCode, {
       headers: headers
     })
       .then((response) => { // do something in case of error here
@@ -56,7 +57,7 @@ export class Room extends Component {
       'Authorization': `Token ${token}`,
       'Content-Type': 'application/json',
     }
-    axios.post("/spotify/current-song", {
+    axios.post(BASE_URL + "/spotify/current-song", {
       roomCode: this.roomCode
     }, {
       headers: headers
@@ -70,7 +71,7 @@ export class Room extends Component {
       'Authorization': `Token ${token}`,
       'Content-Type': 'application/json',
     }
-    axios.post("/api/leave-room", {
+    axios.post(BASE_URL + "/api/leave-room", {
       roomCode: this.roomCode
     }, {
       headers: headers

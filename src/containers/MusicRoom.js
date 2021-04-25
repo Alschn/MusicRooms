@@ -1,53 +1,27 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useParams, useHistory } from 'react-router-dom';
-import { connect } from "react-redux";
-import axios from "axios";
 import Button from "@material-ui/core/Button";
 import CircularProgress from "@material-ui/core/CircularProgress";
-import Divider from '@material-ui/core/Divider';
-import Fab from '@material-ui/core/Fab';
 import Grid from '@material-ui/core/Grid';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
-import Paper from '@material-ui/core/Paper';
-import SendIcon from '@material-ui/icons/Send';
-import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
+import React, { useCallback, useContext, useEffect, useState } from "react";
+import { connect } from "react-redux";
+import { useHistory, useParams } from 'react-router-dom';
+import axiosClient from "../utils/axiosClient";
+import { BASE_URL, sample_messages } from "../utils/config";
+import WebSocketInstance from "../utils/websocketClient";
 import CreateRoomPage from "./CreateRoomPage";
 import MusicPlayer from "./MusicPlayer";
-import { sample_messages, SOCKET_URL } from "../utils/config";
-import useScript from "react-script-hook";
-import Cookies from 'js-cookie';
-
-const spotifyToken = Cookies.get('spotifyAuthToken');
+import Chat from "./room/Chat"
+import Listeners from "./room/Listeners";
+import Search from "./room/Search";
+import { WebPlayerContext } from "./spotify/WebPlayer";
 
 const MusicRoom = (props) => {
   // Hooks
   let history = useHistory();
   const {roomCode} = useParams();
-  const ws = useRef(null);
 
-  // Spotify Web Playback SDK
-  const [loading, error] = useScript({
-    src: "https://sdk.scdn.co/spotify-player.js",
-    onload: () => {
-      console.log('Script has been loaded');
-    }
-  });
-
-  const [sdk, setSdk] = useState(null);
-  const [deviceID, setDeviceID] = useState(null);
-
-  const [currentTrack, setCurrentTrack] = useState({});
-  const [playback, setPlayback] = useState(0);
-  const [playbackState, setPlaybackState] = useState({
-    play: false,
-    shuffle: false,
-    repeat: false,
-    progress: 0,
-    total_time: 0,
-  });
+  // Props from parent - Web Player Context
+  const {sdk, deviceID, currentTrack, playFromDevice, setCanLoadSDK} = useContext(WebPlayerContext);
 
   // room state
   const [votesToSkip, setVotesToSkip] = useState(2);
@@ -59,146 +33,49 @@ const MusicRoom = (props) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState(sample_messages);
 
-  const token = localStorage.getItem('token');
-  const headers = {
-    'Authorization': `Token ${token}`,
-    'Content-Type': 'application/json',
-  }
+  // initialize websocket connection only if user is in valid room
+  const [canJoinChat, setCanJoinChat] = useState(false);
 
+  const getRoomDetails = useCallback(() => {
+    axiosClient.get(BASE_URL + "/api/get-room" + "?code=" + roomCode)
+      .then((response) => {
+        setVotesToSkip(response.data.votes_to_skip);
+        setGuestCanPause(response.data.guest_can_pause);
+        setIsHost(response.data.is_host);
+        setCanLoadSDK(true);
+        setCanJoinChat(true);
+      }).catch(() => {
+        history.push("/");
+      }
+    );
+  }, [roomCode]);
 
   useEffect(() => {
     getRoomDetails();
-  }, [])
+  }, [getRoomDetails])
 
   useEffect(() => {
-    ws.current = new WebSocket(`${SOCKET_URL}/ws/rooms/${roomCode}/`);
+    if (deviceID) playFromDevice(deviceID);
+  }, [deviceID])
 
-    ws.current.onopen = () => {
-      console.log("WebSocket open");
+  useEffect(() => {
+    if (canJoinChat) {
+      WebSocketInstance.addCallbacks(() => {
+      }, addMessage);
     }
-
-    ws.current.onclose = () => {
-      console.log("WebSocket closed")
-    }
-
     return () => {
-      ws.current.close();
+      WebSocketInstance.callbacks = {};
     }
-  }, [])
+  }, [canJoinChat])
 
   useEffect(() => {
-    if (!ws.current) return;
-
-    ws.current.onmessage = e => {
-      const parsedData = JSON.parse(e.data);
-      console.log(parsedData);
-      if (parsedData.command === "new_message") {
-        const {text, time} = parsedData;
-        addMessage({text, time, user: 1});
-      } else if (parsedData.command === "request_fetch") {
-        if (isHost) {
-          // send message with current player state
-        }
-      } else if (parsedData.command === "fetch_current_song" && !isHost) {
-        // fetch host's player state
+    if (canJoinChat) {
+      WebSocketInstance.connect(roomCode);
+      return () => {
+        WebSocketInstance.disconnect();
       }
     }
-  }, [])
-
-  useEffect(() => {
-     const waitForSpotifyWebPlaybackSDKToLoad = async () => {
-      return new Promise((resolve) => {
-        if (window.Spotify) {
-          resolve(window.Spotify);
-        } else {
-          window.onSpotifyWebPlaybackSDKReady = () => {
-            resolve(window.Spotify);
-          };
-        }
-      });
-    }
-
-    (async () => {
-      const {Player} = await waitForSpotifyWebPlaybackSDKToLoad();
-      console.log("The Web Playback SDK has loaded.");
-      const sdk = new Player({
-        name: "Music Rooms - music player",
-        volume: 0.3,
-        getOAuthToken: (callback) => {
-          callback(spotifyToken);
-        },
-      });
-
-      sdk.on('authentication_error', ({message}) => {
-        console.error('Failed to authenticate', message)
-      })
-
-      setSdk(sdk);
-
-      sdk.addListener("ready", ({device_id}) => {
-        console.log('Ready with device: ' + device_id);
-        setDeviceID(device_id);
-
-        playFromDevice(device_id);
-      });
-
-      sdk.addListener("player_state_changed", (state) => {
-        try {
-          const {
-            duration,
-            position,
-            paused,
-            shuffle,
-            repeat_mode,
-            track_window,
-          } = state;
-          const {current_track} = track_window;
-
-          setCurrentTrack(current_track);
-          setPlayback(position);
-          setPlaybackState((state) => ({
-            ...state,
-            is_playing: !paused,
-            shuffle: shuffle,
-            repeat: repeat_mode !== 0,
-            progress: position,
-            total_time: duration
-          }))
-
-
-        } catch (err) {
-          console.log(err);
-        }
-      });
-
-      sdk.connect().then((success) => {
-        if (success) {
-          console.log("The Web Playback SDK successfully connected to Spotify!");
-        }
-      });
-
-    })();
-  }, [spotifyToken]);
-
-  const playFromDevice = (device_id) => {
-    const offset = Math.floor(Math.random() * 240);
-    const initialPlaylist = 'spotify:playlist:2nkpYhOstKgPYu5qy6Q5Xy';
-
-    axios.put(
-      `https://api.spotify.com/v1/me/player/play?device_id=${device_id}`,
-      {
-        context_uri: initialPlaylist,
-        offset: {position: offset}
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${spotifyToken}`
-        }
-      }
-    ).then(() => {
-    }).catch(err => console.error(err))
-  }
+  }, [canJoinChat])
 
   const addMessage = (newMessage) => {
     setMessages(messages => [...messages, newMessage]);
@@ -211,51 +88,21 @@ const MusicRoom = (props) => {
         text: message,
         time: new Date().toLocaleDateString(),
       }
-      ws.current.send(JSON.stringify({...new_message}));
+      WebSocketInstance.sendMessage(new_message);
       setMessage("");
     }
   }
 
-  const renderListItem = (message, key) => {
-    const {user, text, time} = message;
-    let align;
-    user === 1 ? align = "right" : align = "left";
-    return (
-      <ListItem key={key}>
-        <Grid container>
-          <Grid item xs={12}>
-            <ListItemText align={align} primary={text}/>
-          </Grid>
-          <Grid item xs={12}>
-            <ListItemText align={align} secondary={time}/>
-          </Grid>
-        </Grid>
-      </ListItem>
-    );
-  }
-
-
-  const getRoomDetails = () => {
-    axios.get("/api/get-room" + "?code=" + roomCode, {
-      headers: headers
-    })
-      .then((response) => {
-        setVotesToSkip(response.data.votes_to_skip);
-        setGuestCanPause(response.data.guest_can_pause);
-        setIsHost(response.data.is_host);
-      }).catch(() => {
-        history.push("/");
-      }
-    );
+  const handleInputChange = (e) => {
+    setMessage(e.target.value);
   }
 
   const leaveButtonPressed = () => {
-    axios.post("/api/leave-room", {
+    axiosClient.post(BASE_URL + "/api/leave-room", {
       roomCode: roomCode
-    }, {
-      headers: headers
     }).then((response) => {
-      props.history.push("/");
+      sdk.disconnect();
+      history.push("/");
     }).catch(err => {
       console.log(err);
     });
@@ -267,7 +114,7 @@ const MusicRoom = (props) => {
 
   const renderSettings = () => {
     return (
-      <Grid container spacing={1}>
+      <Grid container className="centeredContainer">
         <Grid item xs={12} align="center">
           <CreateRoomPage
             update={true}
@@ -275,17 +122,8 @@ const MusicRoom = (props) => {
             guestCanPause={guestCanPause}
             roomCode={roomCode}
             updateCallback={getRoomDetails}
+            updateShowSettings={updateShowSettings}
           />
-        </Grid>
-
-        <Grid item xs={12} align="center">
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={() => updateShowSettings(false)}
-          >
-            Close
-          </Button>
         </Grid>
       </Grid>
     );
@@ -310,22 +148,20 @@ const MusicRoom = (props) => {
   }
 
   return (
-    <div>
-      <Grid container spacing={1} justify="center">
-        <Grid item xs={12} align="center">
-          <Typography variant="h4" component="h4">
-            Code: {roomCode}
-          </Typography>
-        </Grid>
+    <Grid container justify="center">
+      <Grid item xs={12} align="center">
+        <Typography variant="h4" component="h4">
+          Code: {roomCode}
+        </Typography>
+      </Grid>
 
-        <Grid item xs={6} align="center">
+      <Grid container item xs={8} md={6} lg={8} justify="center" spacing={0}>
+        <Grid item xs={12}>
           {
             Object.keys(currentTrack).length !== 0 && deviceID
               ?
               <MusicPlayer
-                track={currentTrack}
                 code={roomCode}
-                playbackState={playbackState}
               />
               :
               <div style={{paddingTop: "100px", paddingBottom: "100px"}}>
@@ -334,44 +170,40 @@ const MusicRoom = (props) => {
           }
         </Grid>
 
-        <Grid item xs={6} align="center">
-          <Grid container component={Paper} className="chatSection">
-            <Grid item xs={12}>
-              <List className="messageArea">
-                {messages.map((obj, i) => renderListItem(obj, `msg${i}`))}
-              </List>
-              <Divider/>
-
-              <Grid container style={{padding: '15px'}}>
-                <Grid item xs={10}>
-                  <TextField id="outlined-basic-email" label="Type Something" fullWidth
-                             onChange={(e) => setMessage(e.target.value)}/>
-                </Grid>
-                <Grid item xs={2} align="right">
-                  <Fab color="primary" aria-label="add">
-                    <SendIcon onClick={handleSendMessage}/>
-                  </Fab>
-                </Grid>
-              </Grid>
-            </Grid>
+        {deviceID && (
+          <Grid item xs={12}>
+            <Search/>
           </Grid>
-        </Grid>
-
-
-        {isHost ? renderSettingsButton() : null}
-
-        <Grid item xs={12} align="center">
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={leaveButtonPressed}
-          >
-            Leave Room
-          </Button>
-        </Grid>
-
+        )}
       </Grid>
-    </div>
+
+      <Grid container item xs={12} md={6} lg={4} justify="center" spacing={0}>
+        <Grid item xs={12}>
+          <Listeners/>
+        </Grid>
+        <Grid item xs={12}>
+          <Chat
+            messages={messages}
+            handleChangeInput={handleInputChange}
+            handleSendMessage={handleSendMessage}
+            currentInput={message}
+          />
+        </Grid>
+      </Grid>
+
+      {isHost && renderSettingsButton()}
+
+      <Grid item xs={12} align="center">
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={leaveButtonPressed}
+        >
+          Leave Room
+        </Button>
+      </Grid>
+
+    </Grid>
   );
 }
 

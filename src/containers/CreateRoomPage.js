@@ -1,18 +1,18 @@
-import React, { Component } from "react";
+import { Collapse } from "@material-ui/core";
 import Button from "@material-ui/core/Button";
-import Grid from "@material-ui/core/Grid";
-import Typography from "@material-ui/core/Typography";
-import TextField from "@material-ui/core/TextField";
-import FormHelperText from "@material-ui/core/FormHelperText";
 import FormControl from "@material-ui/core/FormControl";
-import { Link } from "react-router-dom";
+import FormControlLabel from "@material-ui/core/FormControlLabel";
+import FormHelperText from "@material-ui/core/FormHelperText";
+import Grid from "@material-ui/core/Grid";
 import Radio from "@material-ui/core/Radio";
 import RadioGroup from "@material-ui/core/RadioGroup";
-import FormControlLabel from "@material-ui/core/FormControlLabel";
-import { Collapse } from "@material-ui/core";
+import TextField from "@material-ui/core/TextField";
+import Typography from "@material-ui/core/Typography";
 import Alert from "@material-ui/lab/Alert";
-import { connect } from "react-redux";
-import axios from "axios";
+import React, { Component } from "react";
+import { Link } from "react-router-dom";
+import axiosClient from "../utils/axiosClient";
+import { BASE_URL } from "../utils/config";
 
 
 export class CreateRoomPage extends Component {
@@ -36,9 +36,11 @@ export class CreateRoomPage extends Component {
   }
 
   handleVotesChanged = e => {
-    this.setState({
-      votesToSkip: e.target.value,
-    });
+    if (Number(e.target.value) > 1) {
+      this.setState({
+        votesToSkip: e.target.value,
+      });
+    }
   }
 
   handleGuestCanPauseChanged = e => {
@@ -48,50 +50,35 @@ export class CreateRoomPage extends Component {
   }
 
   handleCreateButtonPressed = () => {
-    const token = localStorage.getItem('token');
-    axios.post("/api/create-room", {
+    axiosClient.post(BASE_URL + "/api/create-room", {
       votes_to_skip: this.state.votesToSkip,
       guest_can_pause: this.state.guestCanPause,
-    }, {
-      headers: {
-        "Authorization": `Token ${token}`,
-        "Content-Type": "application/json",
-      }
     })
       .then((response) => {
-        this.props.history.push("/room/" + response.data.code);
+        this.props.history.push("/rooms/" + response.data.code);
       }).catch(err => console.log(err));
   }
 
   handleUpdateButtonPressed = () => {
-    const token = localStorage.getItem('token');
-    const requestOptions = {
-      method: "PATCH",
-      headers: {"Content-Type": "application/json", "Authorization": `Token ${token}`},
-      body: JSON.stringify({
-        votes_to_skip: this.state.votesToSkip,
-        guest_can_pause: this.state.guestCanPause,
-        code: this.props.roomCode,
-      }),
-    };
-
-    fetch("/api/update-room", requestOptions).then((response) => {
-      if (response.ok) {
-        this.setState({
-          successMsg: "Room updated successfully!",
-        });
-      } else {
-        this.setState({
-          errorMsg: `An error has occurred! Status: ${response.status}`,
-        });
-      }
+    axiosClient.patch(BASE_URL + "/api/update-room", {
+      votes_to_skip: this.state.votesToSkip,
+      guest_can_pause: this.state.guestCanPause,
+      code: this.props.roomCode,
+    }).then((res) => {
+      this.setState({
+        successMsg: "Room updated successfully!",
+      });
       this.props.updateCallback();
+    }).catch(err => {
+      err.response && this.setState({
+        errorMsg: `An error has occurred! Status: ${err.response.status}`,
+      });
     });
   }
 
   renderCreateButtons() {
     return (
-      <Grid container spacing={1}>
+      <Grid container>
         <Grid item xs={12} align="center">
           <Button
             color="primary"
@@ -113,14 +100,23 @@ export class CreateRoomPage extends Component {
 
   renderUpdateButtons() {
     return (
-      <Grid container spacing={1}>
-        <Grid item xs={12} align="center">
+      <Grid container direction="column">
+        <Grid item xs={12}>
           <Button
             color="primary"
             variant="contained"
             onClick={this.handleUpdateButtonPressed}
           >
             Update Room
+          </Button>
+        </Grid>
+        <Grid item xs={12}>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => this.props.updateShowSettings(false)}
+          >
+            Close
           </Button>
         </Grid>
       </Grid>
@@ -131,7 +127,7 @@ export class CreateRoomPage extends Component {
     const title = this.props.update ? "Update Room" : "Create Room";
 
     return (
-      <Grid container spacing={1}>
+      <Grid container className="centeredContainer">
         <Grid item xs={12} align="center">
           <Collapse
             in={this.state.errorMsg !== "" || this.state.successMsg !== ""}
@@ -166,8 +162,8 @@ export class CreateRoomPage extends Component {
 
         <Grid item xs={12} align="center">
           <FormControl component="fieldset">
-            <FormHelperText>
-              <div align="center">Guest Control of Playback State</div>
+            <FormHelperText style={{textAlign: "center"}}>
+              Guest Control of Playback State
             </FormHelperText>
             <RadioGroup
               row
@@ -203,8 +199,8 @@ export class CreateRoomPage extends Component {
                 style: {textAlign: "center"},
               }}
             />
-            <FormHelperText>
-              <div align="center">Votes Required To Skip Song</div>
+            <FormHelperText style={{textAlign: "center"}}>
+              Votes Required To Skip Song
             </FormHelperText>
           </FormControl>
         </Grid>
@@ -218,4 +214,4 @@ export class CreateRoomPage extends Component {
   }
 }
 
-export default connect()(CreateRoomPage);
+export default CreateRoomPage;

@@ -36,23 +36,50 @@ https://developer.spotify.com/documentation/web-playback-sdk/
 git clone https://github.com/Alschn/MusicRooms.git    
 
 ### Django Setup
-    py -3 -m venv venv  
+Setup virtual environment (Windows) and install dependencies:
+```shell script
+py -3 -m venv venv  
 
-    venv\Scripts\activate  
+venv\Scripts\activate  
 
-    pip install -r requirements.txt  
+pip install -r requirements.txt  
+```
+Run migrations and create superuser:
+```shell script
+python manage.py makemigrations  
 
-    python manage.py makemigrations  
+python manage.py migrate  
 
-    python manage.py migrate  
-
-    python manage.py createsuperuser  
-
-    python manage.py runserver  
+python manage.py createsuperuser  
+```
+Run server:
+```shell script
+python manage.py runserver
+```
 
 ### React Setup
-    cd frontend
+Create `.env` file inside the root directory and set following variables:  
+```shell script
+REACT_APP_REDIRECT_URI='callback uri set in the spotify for developers dashboard'
+REACT_APP_REDIRECT_URI='same but with port 3000'
+REACT_APP_CLIENT_ID='client id from the dashboard'
+REACT_APP_SOCKET_URL='ws://{url}:{port}'
+```
+
+Install all dependencies:
+```shell script
+npm i
+```
+Build assets which will be loaded by Django:
+```shell script
+npm run build
+```
     
-    npm i
-    
-    npm run build
+## To do:
+- Player synchronization for every user
+- Displaying all participants inside the room
+- Search and queue components
+- Storing chat messages, chat styling
+- Add api, rooms, spotify_api (if it is possible) tests
+- Setup github workflow for node
+- Learn how to write frontend tests

@@ -8,7 +8,7 @@ from .utils import (
     execute_spotify_api_call,
     pause_song,
     play_song,
-    skip_song,
+    skip_song, set_volume, prev_song, search_for_items,
 )
 from api.models import Room
 from allauth.socialaccount.providers.spotify.views import SpotifyOAuth2Adapter
@@ -140,12 +140,69 @@ class SkipSong(APIView):
 
         if sender == room.host or len(votes) + 1 >= voted_needed:
             votes.delete()  # delete last song's votes if we were to skip song
-            skip_song(sender)
+            if request.data['forward'] is False:
+                prev_song(sender)
+            else:
+                skip_song(sender)
             return Response({'Message': 'Skipped song'}, status.HTTP_204_NO_CONTENT)
         else:
             vote = Vote(user=sender, room=room, song_id=room.current_song)
             vote.save()
             return Response({'Message': 'Added skip vote'}, status.HTTP_204_NO_CONTENT)
+
+
+class SetVolume(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        sender = request.user
+        room = sender.room
+
+        if not room:
+            return Response({'Error': 'User is not inside of room.'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            volume = request.data['volume']
+        except KeyError:
+            return Response({'Error': 'Volume value not found in request'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if 0 <= volume <= 100:
+            set_volume(sender, volume)
+            return Response({"Message": f"Changed volume to {volume}"}, status=status.HTTP_204_NO_CONTENT)
+        return Response({"Error": 'Invalid volume parameter'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PerformSearch(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        sender = request.user
+
+        if "query" not in request.data or "type" not in request.data:
+            return Response({'Error': 'Query or type parameter not found in request'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        query = request.data['query']
+        types = request.data['type']
+
+        response = search_for_items(user=sender, query=query, types=types)
+        return Response(response, status.HTTP_200_OK)
+
+
+class QueueHandler(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Get tracks inside the queue"""
+        pass
+
+    def put(self, request):
+        """Add tracks to queue """
+        pass
+
+    def delete(self, request):
+        """Delete tracks from queue"""
+        pass
 
 
 class CurrentUser(APIView):

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { BASE_URL } from "../../utils/config";
 import * as actionTypes from "./actionTypes";
 
 export const authStart = () => {
@@ -22,7 +23,7 @@ export const authFail = error => {
 };
 
 export const logout = () => {
-  // POST '/rest-auth/logout' to logout from django and delete token
+  // POST `${BASE_URL}/rest-auth/logout` to logout from django and delete token
   localStorage.removeItem("token");
   localStorage.removeItem("expirationDate");
   return {
@@ -38,20 +39,20 @@ export const checkAuthTimeout = expirationTime => {
   };
 };
 
-export const authSpotifyLogin = (token) => {
+export const authSpotifyLogin = token => {
   return dispatch => {
     dispatch(authStart());
-    axios.post('/rest-auth/spotify/', {
+    axios.post(`${BASE_URL}/rest-auth/spotify/`, {
       access_token: token
     }).then(
-        res => {
-          const api_token = res.data.key;
-          const expirationDate = new Date(new Date().getTime() + 3600 * 1000);
-          localStorage.setItem("token", api_token);
-          localStorage.setItem("expirationDate", expirationDate);
-          dispatch(authSuccess(api_token));
-          dispatch(checkAuthTimeout(3600));
-        }
+      res => {
+        const api_token = res.data.key;
+        const expirationDate = new Date(new Date().getTime() + 3600 * 1000);
+        localStorage.setItem("token", api_token);
+        localStorage.setItem("expirationDate", expirationDate);
+        dispatch(authSuccess(api_token));
+        dispatch(checkAuthTimeout(3600));
+      }
     ).catch(err => {
       dispatch(authFail(err));
       console.log(err);

@@ -1,82 +1,64 @@
-import React, { Component } from "react";
-import { Grid, Button, ButtonGroup, Typography, Avatar } from "@material-ui/core";
+import { Avatar, Button, ButtonGroup, Grid, Typography } from "@material-ui/core";
+import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
-import { authSpotifyLogin } from "../store/actions/auth";
 import { Scopes, SpotifyAuth } from "react-spotify-auth";
-import { REDIRECT_URI, CLIENT_ID } from "../utils/config"
 import 'react-spotify-auth/dist/index.css';
-import axios from "axios";
+import { authSpotifyLogin } from "../store/actions/auth";
+import axiosClient from "../utils/axiosClient";
+import { BASE_URL, CLIENT_ID, REDIRECT_URI } from "../utils/config"
 
-export class HomePage extends Component {
+const HomePage = ({history, error, authenticated}) => {
   // probably there should be another reducer for fetching data
   // or just connect fetching data to auth reducer
-  constructor(props) {
-    super(props);
-    this.state = {
-      roomCode: null,
-      fetched: false,
-      user: null,
-      image_url: null,
-    };
-  }
 
-  clearRoomCode = () => {
-    this.setState({
-      roomCode: null,
-    });
+  const [roomCode, setRoomCode] = useState(null);
+
+  const [fetched, setFetched] = useState(false);
+
+  const [user, setUser] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
+
+  // these 2 don't work as intended
+  useEffect(() => {
+    axiosClient.get(
+      BASE_URL + '/spotify/get-current-user'
+    ).then((response) => {
+      const {data: {user, image_url}} = response;
+      setFetched(true);
+      setUser(user);
+      setImageUrl(image_url);
+    }).catch(err => console.log(err))
+  }, [])
+
+  useEffect(() => {
+    axiosClient.get(BASE_URL + "/api/user-in-room")
+      .then(response => {
+        const {data: {code}} = response;
+        if (code) {
+          setRoomCode(code);
+        } else {
+          setRoomCode(null);
+        }
+      }).catch(err => console.log(err));
+
+  }, [])
+
+  const clearRoomCode = () => {
+    setRoomCode(null);
   };
 
-  async componentDidMount() {
-    const token = localStorage.getItem('token');
-
-    if (token !== null) {
-      const headers = {
-        'Authorization': `Token ${token}`,
-        'Content-Type': 'application/json',
-      }
-
-      axios.get("/api/user-in-room", {
-        headers: headers
-      })
-        .then(response => {
-          if (response.data.code) {
-            this.setState({
-              roomCode: response.data.code,
-            });
-          } else {
-            this.setState({roomCode: null})
-          }
-        });
-
-      const response = await axios.get(
-        '/spotify/get-current-user', {
-          headers: headers
-        }
-      )
-      const data = response.data;
-      this.setState({
-        fetched: true,
-        user: data.user,
-        image_url: data.image_url
-      })
-    }
-  }
-
-  renderHomePage() {
-    const {error, token, authenticated} = this.props;
+  const renderHomePage = () => {
     return (
-      <Grid container spacing={3}>
-        {(this.state.fetched && authenticated) ? (
-          <Grid container direction="row" alignItems="center" justify="center" spacing={1}>
+      <Grid container justify="center" alignItems="center" className="centeredContainer">
+        {(fetched && authenticated) && (
+          <Grid container direction="row" alignItems="center" justify="center">
             <Grid item>
-              <Avatar src={this.state.image_url}/>
+              <Avatar src={imageUrl}/>
             </Grid>
             <Grid item>
-              <Typography variant="h5" component="h5">{this.state.user}</Typography>
+              <Typography variant="h5" component="h5">{user}</Typography>
             </Grid>
           </Grid>
-        ) : (
-          <></>
         )}
 
         <Grid item xs={12} align="center">
@@ -88,11 +70,11 @@ export class HomePage extends Component {
         {authenticated ? (
           <Grid item xs={12} align="center">
             <ButtonGroup disableElevation variant="contained" color="primary">
-              <Button color="primary" onClick={() => this.props.history.push("/join")}>
+              <Button color="primary" onClick={() => history.push("/join")}>
                 Join a Room
               </Button>
 
-              <Button color="secondary" onClick={() => this.props.history.push("/create")}>
+              <Button color="secondary" onClick={() => history.push("/create")}>
                 Create a Room
               </Button>
             </ButtonGroup>
@@ -118,23 +100,9 @@ export class HomePage extends Component {
     );
   }
 
-  render() {
-    if (this.state.roomCode !== null && this.state.roomCode !== undefined) {
-      // return <Redirect to={`/room/${this.state.roomCode}`}/>
-      return (
-        <div className="center">
-          {this.renderHomePage()}
-        </div>
-      );
-    } else {
-      return (
-        <div className="center">
-          {this.renderHomePage()}
-        </div>
-      );
-    }
-
-  }
+  // replace later with <Redirect>
+  if (roomCode !== null && roomCode !== undefined) return renderHomePage()
+  return renderHomePage();
 }
 
 const mapStateToProps = state => {

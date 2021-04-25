@@ -1,8 +1,8 @@
-import React, { Component } from "react";
-import { Link, withRouter } from "react-router-dom";
-import { connect } from "react-redux";
-import { logout } from "../store/actions/auth";
 import Button from "@material-ui/core/Button";
+import React, { Component } from "react";
+import { connect } from "react-redux";
+import { withRouter } from "react-router-dom";
+import { logout } from "../store/actions/auth";
 
 class CustomLayout extends Component {
   render() {
@@ -31,12 +31,10 @@ class CustomLayout extends Component {
         )}
 
         {this.props.children}
-
       </div>
     );
   }
 }
-
 
 const mapStateToProps = state => {
   return {

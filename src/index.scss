@@ -11,20 +11,7 @@ body {
   animation: gradient 30s ease infinite;
 }
 
-#main {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  left: 0;
-  top: 0;
-}
-
-#app {
-  width: 100%;
-  height: 100%;
-}
-
-.center {
+.centeredContainer {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -41,15 +28,4 @@ body {
   100% {
     background-position: 0 50%;
   }
-}
-
-/* Room */
-.chatSection {
-    max-width: 500px;
-    height: 80vh;
-}
-
-.messageArea {
-    height: 70vh;
-    overflow-y: auto;
 }
