@@ -1,7 +1,10 @@
-from channels.generic.websocket import AsyncWebsocketConsumer
-from asgiref.sync import async_to_sync
-from channels.db import database_sync_to_async
 import json
+
+from channels.db import database_sync_to_async
+from channels.generic.websocket import AsyncWebsocketConsumer
+
+from api.models import User, Room
+from api.serializers import UserSerializer
 
 
 class RoomConsumer(AsyncWebsocketConsumer):
@@ -17,21 +20,24 @@ class RoomConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        await self.send_get_listeners_request_to_group()
+
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
 
-    async def receive(self, text_data):     # server receives message
+    async def receive(self, text_data):  # server receives message
         print("Received: " + text_data)
         text_data_json = json.loads(text_data)
+
         if 'text' in text_data_json:
             message = text_data_json['text']
             user = text_data_json['user']
             timestamp = text_data_json['time']
 
-            await self.channel_layer.group_send(    # server alerts every user inside the group
+            await self.channel_layer.group_send(  # server alerts every user inside the group
                 self.room_group_name,
                 {
                     # event handler
@@ -42,31 +48,60 @@ class RoomConsumer(AsyncWebsocketConsumer):
                     'time': timestamp,
                 }
             )
-        elif 'sender' in text_data_json:
-            sender = text_data_json['sender']
 
-            await self.channel_layer.group_send(  # server alerts every user inside the group
+        elif 'Request' in text_data_json:
+            await self.channel_layer.group_send(
                 self.room_group_name,
                 {
-                    # event handler
-                    'type': 'request_fetch',
-                    # event
-                    'sender': sender,
+                    'type': 'request_fetch',  # event handler
+                })
+
+        elif 'track_window' in text_data_json:
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'get_current_song',  # event handler
+                    'playbackState': text_data_json,  # event
+                }
+            )
+        elif 'get_listeners' in text_data_json:
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'get_listeners',  # event handler
+                    'code': self.room_name,  # event
                 }
             )
 
-        elif 'song' in text_data_json:
-            song = text_data_json['song']
+    async def get_listeners(self, event):
+        """"Dispatches a list of Users in the current room to the listeners"""
+        users = await self.get_users_in_room(code=event['code'])
 
-            await self.channel_layer.group_send(  # server alerts every user inside the group
-                self.room_group_name,
-                {
-                    # event handler
-                    'type': 'fetch_current_song',
-                    # event
-                    'song': song,
-                }
-            )
+        await self.send(text_data=json.dumps({
+            'users': users,
+            'command': 'set_listeners'
+        }))
+
+    ###################################################
+
+    async def get_current_song(self, event):
+        """Dispatches Playback state object received from host
+        (client receives payload)"""
+        await self.send(text_data=json.dumps({
+            'state': event['playbackState'],
+            'command': 'set_current_song'
+        }))
+
+    async def request_fetch(self, event):
+        """
+        User requests host's current playback state.
+        Host will receive this command and respond with their playback state.
+        """
+        await self.send(text_data=json.dumps({
+            'command': 'send_current_song'
+        }))
+
+    ###################################################
 
     async def chatroom_message(self, event):
         message = event['text']
@@ -81,30 +116,21 @@ class RoomConsumer(AsyncWebsocketConsumer):
             'command': 'new_message'
         }))
 
-    async def song_changed(self, event):
-        """
-        Host sends message that his web player sdk changed state
-        All users fetch that state and synchronize their player
-        """
-        song_id = event['song']
+    async def send_get_listeners_request_to_group(self):
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'get_listeners',
+                'code': self.room_name,
+            }
+        )
 
-        await self.send(text_data=json.dumps({
-            'song_id': song_id,
-            'command': 'song_changed'
-        }))
-
-
-    async def fetch_current_song(self, event):
-        song = event['song']
-
-        await self.send(text_data=json.dumps({
-            'song': song,
-            'command': 'fetch_current_song'
-        }))
-
-    async def request_fetch(self, event):
-        sender = event['sender']
-        await self.send(text_data=json.dumps({
-            'sender': sender,
-            'command': 'request_fetch'
-        }))
+    @database_sync_to_async
+    def get_users_in_room(self, code):
+        room = Room.objects.filter(code=code)
+        if room.exists():
+            room = room[0]
+            qs = User.objects.filter(room=room)
+            serialized = UserSerializer(qs, many=True)
+            return serialized.data
+        return []

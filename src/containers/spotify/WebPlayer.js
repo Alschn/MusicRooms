@@ -5,20 +5,7 @@ import useScript from "react-script-hook";
 
 const spotifyToken = Cookies.get('spotifyAuthToken');
 
-export const WebPlayerContext = createContext({
-  sdk: null,
-  deviceID: null,
-  currentTrack: {},
-  playback: 0,
-  playbackState: {
-    play: false,
-    shuffle: false,
-    repeat: false,
-    progress: 0,
-    total_time: 0,
-  },
-  initialVolume: 0.3,
-});
+export const WebPlayerContext = createContext({});
 
 const WebPlayer = ({children}) => {
   // Spotify Web Playback SDK
@@ -31,9 +18,11 @@ const WebPlayer = ({children}) => {
   });
   const initialVolume = 0.3;
 
+  // SDK object and user's device id
   const [sdk, setSdk] = useState(null);
   const [deviceID, setDeviceID] = useState(null);
 
+  // Playback state
   const [currentTrack, setCurrentTrack] = useState({});
   const [playback, setPlayback] = useState(0);
   const [playbackState, setPlaybackState] = useState({
@@ -44,6 +33,7 @@ const WebPlayer = ({children}) => {
     total_time: 0,
   });
 
+  // If user is a participant of a valid room, load SDK
   const [canLoadSDK, setCanLoadSDK] = useState(false);
 
   const playFromDevice = (device_id) => {
@@ -82,7 +72,7 @@ const WebPlayer = ({children}) => {
 
       (async () => {
         const {Player} = await waitForSpotifyWebPlaybackSDKToLoad();
-        console.log("The Web Playback SDK has loaded.");
+        console.log("The Web Playback SDK has been loaded.");
         const sdk = new Player({
           name: "Music Rooms - music player",
           volume: initialVolume,
@@ -91,15 +81,28 @@ const WebPlayer = ({children}) => {
           },
         });
 
+        sdk.on('initialization_error', ({message}) => {
+          console.error('Failed to initialize', message);
+        });
+
         sdk.on('authentication_error', ({message}) => {
           console.error('Failed to authenticate', message)
         })
+
+        sdk.on('account_error', ({message}) => {
+          console.error('Failed to validate Spotify account', message);
+          alert(`Failed to validate Spotify account ${message}`);
+        });
 
         setSdk(sdk);
 
         sdk.addListener("ready", ({device_id}) => {
           console.log('Ready with device: ' + device_id);
           setDeviceID(device_id);
+        });
+
+        sdk.addListener('not_ready', ({device_id}) => {
+          console.log('Device ID is not ready for playback', device_id);
         });
 
         sdk.addListener("player_state_changed", (state) => {

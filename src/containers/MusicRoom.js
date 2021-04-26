@@ -3,7 +3,6 @@ import CircularProgress from "@material-ui/core/CircularProgress";
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import React, { useCallback, useContext, useEffect, useState } from "react";
-import { connect } from "react-redux";
 import { useHistory, useParams } from 'react-router-dom';
 import axiosClient from "../utils/axiosClient";
 import { BASE_URL, sample_messages } from "../utils/config";
@@ -15,7 +14,7 @@ import Listeners from "./room/Listeners";
 import Search from "./room/Search";
 import { WebPlayerContext } from "./spotify/WebPlayer";
 
-const MusicRoom = (props) => {
+const MusicRoom = () => {
   // Hooks
   let history = useHistory();
   const {roomCode} = useParams();
@@ -28,6 +27,9 @@ const MusicRoom = (props) => {
   const [guestCanPause, setGuestCanPause] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
+  // listeners inside the room
+  const [listeners, setListeners] = useState([]);
 
   // chat input & content
   const [message, setMessage] = useState("");
@@ -62,6 +64,11 @@ const MusicRoom = (props) => {
     if (canJoinChat) {
       WebSocketInstance.addCallbacks(() => {
       }, addMessage);
+      WebSocketInstance.setCallbacks(
+        {set_listeners: ({users}) => setListeners([...users])},
+        {send_current_song: () => HostSendsCurrentSong()},
+        {set_current_song: (playbackState) => ClientReceivesCurrentSong(playbackState)},
+      )
     }
     return () => {
       WebSocketInstance.callbacks = {};
@@ -143,6 +150,20 @@ const MusicRoom = (props) => {
     );
   }
 
+
+  const HostSendsCurrentSong = () => {
+    if (isHost && sdk) sdk.getCurrentState().then(state => WebSocketInstance.sendMessage(state));
+  }
+
+  const ClientRequestsCurrentSong = () => {
+    if (!isHost) WebSocketInstance.sendMessage({'Request': 'Current'})
+  }
+
+  const ClientReceivesCurrentSong = (state) => {
+    if (!isHost) console.log(state);
+  }
+
+
   if (showSettings) {
     return renderSettings();
   }
@@ -155,7 +176,7 @@ const MusicRoom = (props) => {
         </Typography>
       </Grid>
 
-      <Grid container item xs={8} md={6} lg={8} justify="center" spacing={0}>
+      <Grid container item xs={8} md={6} lg={8}>
         <Grid item xs={12}>
           {
             Object.keys(currentTrack).length !== 0 && deviceID
@@ -177,18 +198,21 @@ const MusicRoom = (props) => {
         )}
       </Grid>
 
-      <Grid container item xs={12} md={6} lg={4} justify="center" spacing={0}>
-        <Grid item xs={12}>
-          <Listeners/>
+      <Grid item xs={8} md={6} lg={4}>
+        <Grid container direction='column'>
+          <Grid item xs={12}>
+            <Listeners listeners={listeners} setListeners={setListeners}/>
+          </Grid>
+          <Grid item xs={12}>
+            <Chat
+              messages={messages}
+              handleChangeInput={handleInputChange}
+              handleSendMessage={handleSendMessage}
+              currentInput={message}
+            />
+          </Grid>
         </Grid>
-        <Grid item xs={12}>
-          <Chat
-            messages={messages}
-            handleChangeInput={handleInputChange}
-            handleSendMessage={handleSendMessage}
-            currentInput={message}
-          />
-        </Grid>
+
       </Grid>
 
       {isHost && renderSettingsButton()}
@@ -203,16 +227,25 @@ const MusicRoom = (props) => {
         </Button>
       </Grid>
 
+      <Grid item xs={12} align="center" style={{margin: 100, border: "2px black dashed"}}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={HostSendsCurrentSong}
+        >
+          Send Current Song
+        </Button>
+
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={ClientRequestsCurrentSong}
+        >
+          Request Current Song
+        </Button>
+      </Grid>
     </Grid>
   );
 }
 
-
-const mapStateToProps = state => {
-  return {
-    authenticated: state.auth.token !== null,
-    token: state.auth.token,
-  };
-};
-
-export default connect(mapStateToProps, null)(MusicRoom);
+export default MusicRoom;

@@ -41,6 +41,7 @@ class WebSocketService {
 
   socketMessageHandler(data) {
     const parsedData = JSON.parse(data);
+    // console.log(parsedData)
     const command = parsedData.command;
     if (Object.keys(this.callbacks).length === 0) {
       // if there are no callbacks, cannot respond to command
@@ -54,11 +55,28 @@ class WebSocketService {
     if (command === "messages") {
       this.callbacks[command](parsedData.messages);
     }
+    if (command === "set_listeners") {
+      this.callbacks[command](parsedData);
+    }
+
+    else if (command === "send_current_song") {
+      this.callbacks[command]();
+    }
+    else if (command === "set_current_song") {
+      this.callbacks[command](parsedData);
+    }
   }
 
   addCallbacks(messagesCallback, newMessageCallback) {
     this.callbacks["messages"] = messagesCallback;
     this.callbacks["new_message"] = newMessageCallback;
+  }
+
+  setCallbacks(...newCallbacks) {
+    // accepts multiple objects: {cb: (arg) => {// body}}
+    newCallbacks.forEach((callbackObject) => {
+      this.callbacks = {...this.callbacks, ...callbackObject}
+    });
   }
 
   sendMessage(data) {
