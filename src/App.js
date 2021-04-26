@@ -13,19 +13,13 @@ class App extends Component {
   render() {
     return (
       <Router>
-        <CustomLayout {...this.props}>
+        <CustomLayout>
           <BaseRouter />
         </CustomLayout>
       </Router>
     );
   }
 }
-
-const mapStateToProps = state => {
-  return {
-    isAuthenticated: state.auth.token !== null
-  };
-};
 
 const mapDispatchToProps = dispatch => {
   return {
@@ -34,6 +28,6 @@ const mapDispatchToProps = dispatch => {
 };
 
 export default connect(
-  mapStateToProps,
+  null,
   mapDispatchToProps
 )(App);
