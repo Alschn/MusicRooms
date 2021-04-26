@@ -74,12 +74,13 @@ Build assets which will be loaded by Django:
 ```shell script
 npm run build
 ```
+Local development (frontend runs port 3000, backend 8000):
+```shell script
+npm start
+```
     
 ## To do:
-- Player synchronization for every user
-- Displaying all participants inside the room
-- Search and queue components
+- Web Player synchronization for every user
 - Storing chat messages, chat styling
-- Add api, rooms, spotify_api (if it is possible) tests
-- Setup github workflow for node
+- Add api, rooms (async stuff), spotify_api (if it is possible) tests
 - Learn how to write frontend tests

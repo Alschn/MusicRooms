@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 from django.contrib.auth.models import User
 from .models import SpotifyToken
@@ -37,12 +38,16 @@ def execute_spotify_api_call(user, endpoint, post_=False, put_=False, other_base
     URL = BASE_URL if not other_base_url else other_base_url
 
     if post_:
-        post(URL + endpoint, headers=headers)
+        response = post(URL + endpoint, headers=headers)
     elif put_:
-        put(URL + endpoint, headers=headers)
+        response = put(URL + endpoint, headers=headers)
+    else:
+        response = get(URL + endpoint, {}, headers=headers)
 
-    # else it is get request
-    response = get(URL + endpoint, {}, headers=headers)
+    # received empty object
+    if not response.text:
+        return response
+
     try:
         return response.json()
     except Exception as e:
@@ -70,4 +75,12 @@ def set_volume(user, value):
 
 
 def search_for_items(user, query, types):
-    return execute_spotify_api_call(user, f"search?q={query}&type={types}", other_base_url="https://api.spotify.com/v1/")
+    return execute_spotify_api_call(
+        user,
+        endpoint=f"search?q={query}&type={types}",
+        other_base_url="https://api.spotify.com/v1/"
+    )
+
+
+def add_to_queue(user, uri):
+    return execute_spotify_api_call(user, f"player/queue?uri={uri}", post_=True)

@@ -1,20 +1,20 @@
-from rest_auth.registration.serializers import SocialLoginSerializer
-from spotify_api.models import Vote
+from allauth.socialaccount.models import SocialAccount
+from allauth.socialaccount.providers.spotify.views import SpotifyOAuth2Adapter
 from django.shortcuts import redirect
-from rest_framework.views import APIView
+from rest_auth.registration.serializers import SocialLoginSerializer
+from rest_auth.registration.views import SocialLoginView
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from spotify_api.models import Vote
 from .utils import (
     execute_spotify_api_call,
     pause_song,
     play_song,
-    skip_song, set_volume, prev_song, search_for_items,
+    skip_song, set_volume, prev_song, search_for_items, add_to_queue,
 )
-from api.models import Room
-from allauth.socialaccount.providers.spotify.views import SpotifyOAuth2Adapter
-from rest_auth.registration.views import SocialLoginView
-from rest_framework.permissions import IsAuthenticated
-from allauth.socialaccount.models import SocialAccount
 
 
 class SpotifyLogin(SocialLoginView):
@@ -186,29 +186,32 @@ class PerformSearch(APIView):
         types = request.data['type']
 
         response = search_for_items(user=sender, query=query, types=types)
-        return Response(response, status.HTTP_200_OK)
+        # do the error handling
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class QueueHandler(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        """Get tracks inside the queue"""
-        pass
-
-    def put(self, request):
+    def post(self, request):
         """Add tracks to queue """
-        pass
+        sender = request.user
 
-    def delete(self, request):
-        """Delete tracks from queue"""
-        pass
+        if "uri" not in request.data:
+            return Response({'Error': "Song's uri not found in request"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        song_uri = request.data['uri']
+        response = add_to_queue(user=sender, uri=song_uri)
+        # do the error handling
+
+        return Response(response, status=status.HTTP_204_NO_CONTENT)
 
 
 class CurrentUser(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, format=None):
+    def get(self, request):
         user = request.user
         social_acc = SocialAccount.objects.filter(user=user)
         if social_acc.exists():

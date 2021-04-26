@@ -1,6 +1,7 @@
+from allauth.socialaccount.models import SocialAccount
 from django.conf import settings
 from rest_framework import serializers
-from .models import Room
+from .models import Room, User
 
 
 class RoomSerializer(serializers.ModelSerializer):
@@ -19,7 +20,7 @@ class CreateRoomSerializer(serializers.ModelSerializer):
 
 
 class UpdateRoomSerializer(serializers.ModelSerializer):
-    code = serializers.CharField(validators=[])     # redefine code in serializer
+    code = serializers.CharField(validators=[])  # redefine code in serializer
 
     class Meta:
         model = Room
@@ -28,6 +29,7 @@ class UpdateRoomSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     """might come in handy later, rn not used"""
+
     class Meta:
-        model = settings.AUTH_USER_MODEL
+        model = User
         fields = ('id', 'username', 'email')
