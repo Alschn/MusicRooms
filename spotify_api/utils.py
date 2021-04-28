@@ -6,7 +6,8 @@ from django.utils import timezone
 from requests import post, get, put
 from allauth.socialaccount.models import SocialToken, SocialAccount
 
-BASE_URL = "https://api.spotify.com/v1/me/"
+BASE_URL = "https://api.spotify.com/v1/"
+BASE_URL_ME = "https://api.spotify.com/v1/me/"
 
 
 def get_user_tokens(user):
@@ -35,7 +36,7 @@ def execute_spotify_api_call(user, endpoint, post_=False, put_=False, other_base
     spotify_token = get_user_tokens(user)
     headers = {'Content-Type': 'application/json', 'Authorization': "Bearer " + spotify_token}
 
-    URL = BASE_URL if not other_base_url else other_base_url
+    URL = BASE_URL_ME if not other_base_url else other_base_url
 
     if post_:
         response = post(URL + endpoint, headers=headers)
@@ -78,9 +79,13 @@ def search_for_items(user, query, types):
     return execute_spotify_api_call(
         user,
         endpoint=f"search?q={query}&type={types}",
-        other_base_url="https://api.spotify.com/v1/"
+        other_base_url=BASE_URL
     )
 
 
 def add_to_queue(user, uri):
     return execute_spotify_api_call(user, f"player/queue?uri={uri}", post_=True)
+
+
+def get_recommendations(user, track_id):
+    return execute_spotify_api_call(user, f"recommendations?seed_tracks={track_id}", other_base_url=BASE_URL)

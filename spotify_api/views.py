@@ -13,7 +13,7 @@ from .utils import (
     execute_spotify_api_call,
     pause_song,
     play_song,
-    skip_song, set_volume, prev_song, search_for_items, add_to_queue,
+    skip_song, set_volume, prev_song, search_for_items, add_to_queue, get_recommendations,
 )
 
 
@@ -206,6 +206,21 @@ class QueueHandler(APIView):
         # do the error handling
 
         return Response(response, status=status.HTTP_204_NO_CONTENT)
+
+
+class GetRecommendations(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        sender = request.user
+
+        if 'seed_tracks' not in request.data:
+            return Response({}, status=status.HTTP_400_BAD_REQUEST)
+
+        track = str(request.data['seed_tracks'])
+        response = get_recommendations(user=sender, track_id=track)
+        # handle errors
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class CurrentUser(APIView):
