@@ -8,7 +8,10 @@ import ListItemText from "@material-ui/core/ListItemText";
 import Paper from "@material-ui/core/Paper";
 import TextField from "@material-ui/core/TextField";
 import SendIcon from "@material-ui/icons/Send";
+import TimeAgo from 'javascript-time-ago';
 import React from "react";
+
+const timeAgo = new TimeAgo();
 
 const useStyles = makeStyles(theme => ({
   messageArea: {
@@ -23,22 +26,26 @@ const useStyles = makeStyles(theme => ({
 const Chat = ({currentInput, messages, handleChangeInput, handleSendMessage}) => {
   const classes = useStyles();
 
-  const submitMessageWithEnter = (e) => {
+  const submitMessageWithEnter = e => {
     if (e.key === "Enter") handleSendMessage();
   }
 
-  const renderListItem = (message, key) => {
-    const {user, text, time} = message;
+  const formatTimestamp = timestamp => {
+    const diff = Date.now() - new Date(timestamp);
+    return timeAgo.format(Date.now() - diff);
+  }
+
+  const renderListItem = ({sender, content, timestamp}, key) => {
     let align;
-    user === 1 ? align = "right" : align = "left";
+    sender === 2 ? align = "right" : align = "left";
     return (
       <ListItem key={key}>
         <Grid container>
           <Grid item xs={12}>
-            <ListItemText align={align} primary={text}/>
+            <ListItemText align={align} primary={content}/>
           </Grid>
           <Grid item xs={12}>
-            <ListItemText align={align} secondary={time}/>
+            <ListItemText align={align} secondary={formatTimestamp(timestamp)}/>
           </Grid>
         </Grid>
       </ListItem>
@@ -49,7 +56,7 @@ const Chat = ({currentInput, messages, handleChangeInput, handleSendMessage}) =>
     <Grid container component={Paper}>
       <Grid item xs={12}>
         <List className={classes.messageArea}>
-          {messages.map((obj, i) => renderListItem(obj, `msg${i}`))}
+          {messages.map((message, i) => renderListItem(message, `${i}.message`))}
         </List>
         <Divider/>
 
