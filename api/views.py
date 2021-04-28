@@ -29,6 +29,8 @@ class GetRoom(APIView):
             room = Room.objects.filter(code=code)
             if room.exists():
                 room = room[0]
+                if not user.room or user.room != room:
+                    return Response({'Error': 'User is not in this room!'}, status=status.HTTP_403_FORBIDDEN)
                 data = RoomSerializer(room).data
                 data['is_host'] = user == room.host
                 return Response(data, status=status.HTTP_200_OK)

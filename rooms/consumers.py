@@ -5,9 +5,18 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 from api.models import User, Room
 from api.serializers import UserSerializer
+from rooms.models import Message
+from rooms.serializers import MessageSerializer
 
 
 class RoomConsumer(AsyncWebsocketConsumer):
+    commands = {
+        "get_new_message": "get_new_message",
+        "fetch_messages": "fetch_messages",
+        "request_fetch": "request_fetch",
+        "get_current_song": "get_current_song",
+        "get_listeners": "get_listeners",
+    }
 
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
@@ -20,62 +29,76 @@ class RoomConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        await self.send_get_listeners_request_to_group()
-
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
 
-    async def receive(self, text_data):  # server receives message
+    async def receive(self, text_data):
         print("Received: " + text_data)
         text_data_json = json.loads(text_data)
 
-        if 'text' in text_data_json:
-            message = text_data_json['text']
-            user = text_data_json['user']
-            timestamp = text_data_json['time']
+        command = text_data_json.get('command', None)
+        if not command:
+            return
 
-            await self.channel_layer.group_send(  # server alerts every user inside the group
-                self.room_group_name,
-                {
-                    # event handler
-                    'type': 'chatroom_message',
-                    # event
-                    'text': message,
-                    'user': user,
-                    'time': timestamp,
-                }
-            )
+        # type - event handler
+        # params - events
 
-        elif 'Request' in text_data_json:
+        # to be refactored (right now this code is an overkill)
+        if command == 'get_new_message':
+            message = text_data_json
+            await self.create_new_message(message)
+
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
-                    'type': 'request_fetch',  # event handler
+                    'type': self.commands[text_data_json['command']],
+                    'message': message
+                }
+            )
+
+        elif command == 'fetch_messages':
+            # fetch_messages
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': self.commands[text_data_json['command']],
+                }
+            )
+
+        elif command == 'request_fetch':
+            # request_fetch
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': self.commands[text_data_json['command']],
                 })
 
-        elif 'track_window' in text_data_json:
+        elif command == 'get_current_song':
+            # get_current_song
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
-                    'type': 'get_current_song',  # event handler
-                    'playbackState': text_data_json,  # event
-                }
-            )
-        elif 'get_listeners' in text_data_json:
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'get_listeners',  # event handler
-                    'code': self.room_name,  # event
+                    'type': self.commands[text_data_json['command']],
+                    'playbackState': text_data_json,
                 }
             )
 
+        elif command == "get_listeners":
+            # get_listeners
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': self.commands[text_data_json['command']],
+                }
+            )
+
+    ###################################################
     async def get_listeners(self, event):
         """"Dispatches a list of Users in the current room to the listeners"""
-        users = await self.get_users_in_room(code=event['code'])
+        users = await self.get_users_in_room(code=self.room_name)
 
         await self.send(text_data=json.dumps({
             'users': users,
@@ -83,7 +106,6 @@ class RoomConsumer(AsyncWebsocketConsumer):
         }))
 
     ###################################################
-
     async def get_current_song(self, event):
         """Dispatches Playback state object received from host
         (client receives payload)"""
@@ -102,28 +124,31 @@ class RoomConsumer(AsyncWebsocketConsumer):
         }))
 
     ###################################################
+    async def fetch_messages(self, event):
+        """Initially fetches n-last messages and sends them to user."""
+        # to do sending message only to one person
+        messages = await self.get_messages_in_room(self.room_name)
 
-    async def chatroom_message(self, event):
-        message = event['text']
-        user = event['user']
-        time = event['time']
-
-        # sends data to every client inside the room
         await self.send(text_data=json.dumps({
-            'user': user,
-            'text': message,
-            'time': time,
-            'command': 'new_message'
+            'messages': messages,
+            'command': 'set_fetched_messages'
         }))
 
-    async def send_get_listeners_request_to_group(self):
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'get_listeners',
-                'code': self.room_name,
-            }
-        )
+    async def get_new_message(self, event):
+        """Client sends new chat message.
+        Server receives and saves it to database.
+        Then server sends it to all users, who will load the message."""
+        message = event['message']
+        user = message['sender']
+        text = message['content']
+        time = message['timestamp']
+
+        await self.send(text_data=json.dumps({
+            'sender': user,
+            'content': text,
+            'timestamp': time,
+            'command': 'set_new_message'
+        }))
 
     @database_sync_to_async
     def get_users_in_room(self, code):
@@ -134,3 +159,23 @@ class RoomConsumer(AsyncWebsocketConsumer):
             serialized = UserSerializer(qs, many=True)
             return serialized.data
         return []
+
+    @database_sync_to_async
+    def get_messages_in_room(self, code):
+        room = Room.objects.filter(code=code)
+        if room.exists():
+            room = room[0]
+            messages = room.get_last_n_messages(n=10)
+            serialized = MessageSerializer(messages, many=True)
+            return serialized.data
+        return []
+
+    @database_sync_to_async
+    def create_new_message(self, message):
+        user = message['sender']
+        text = message['content']
+        time = message['timestamp']
+        room_code = message['room']
+        sender = User.objects.get(id=user)
+        room = Room.objects.get(code=room_code)
+        Message.objects.create(sender=sender, content=text, timestamp=time, room=room)

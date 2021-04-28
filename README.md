@@ -11,7 +11,7 @@ Music Rooms web application built with Django Rest Framework, Django Channels, W
 </div>
 
 
-## Used frameworks & libraries
+## Used frameworks, libraries and tools:
 #### Backend:
 - Django
 - django-rest-framework
@@ -22,6 +22,7 @@ Music Rooms web application built with Django Rest Framework, Django Channels, W
 - React
 - Redux
 - Material UI
+- Sass
 - Websocket API
 - axios
 #### External APIs
@@ -61,7 +62,7 @@ python manage.py runserver
 Create `.env` file inside the root directory and set following variables:  
 ```shell script
 REACT_APP_REDIRECT_URI='callback uri set in the spotify for developers dashboard'
-REACT_APP_REDIRECT_URI='same but with port 3000'
+REACT_APP_REDIRECT_URI_DEV='same as above but with port 3000'
 REACT_APP_CLIENT_ID='client id from the dashboard'
 REACT_APP_SOCKET_URL='ws://{url}:{port}'
 ```
@@ -80,7 +81,10 @@ npm start
 ```
     
 ## To do:
-- Web Player synchronization for every user
-- Storing chat messages, chat styling
+- Web Player synchronization for every user (started working on that)
+- Set up Redis channel layer ?
+- Music room styling
+- Error handling (make ws reconnect, handle backend errors)
 - Add api, rooms (async stuff), spotify_api (if it is possible) tests
-- Learn how to write frontend tests
+- Learn how to write frontend tests (Jest, Cypress)
+- and way more ...

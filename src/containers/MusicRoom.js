@@ -35,7 +35,7 @@ const MusicRoom = () => {
 
   // chat input & content
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState(sample_messages);
+  const [messages, setMessages] = useState([]);
 
   // initialize websocket connection only if user is in valid room
   const [canJoinChat, setCanJoinChat] = useState(false);
@@ -64,27 +64,24 @@ const MusicRoom = () => {
 
   useEffect(() => {
     if (canJoinChat) {
-      WebSocketInstance.addCallbacks(() => {
-      }, addMessage);
       WebSocketInstance.setCallbacks(
+        {set_new_message: addMessage},
+        {set_fetched_messages: ({messages}) => setMessages([...messages])},
         {set_listeners: ({users}) => setListeners([...users])},
         {send_current_song: () => HostSendsCurrentSong()},
         {set_current_song: (playbackState) => ClientReceivesCurrentSong(playbackState)},
       )
-    }
-    return () => {
-      WebSocketInstance.callbacks = {};
     }
   }, [canJoinChat])
 
   useEffect(() => {
     if (canJoinChat) {
       WebSocketInstance.connect(roomCode);
-      return () => {
-        WebSocketInstance.disconnect();
-      }
+      // return () => {
+      //   WebSocketInstance.disconnect();
+      // }
     }
-  }, [canJoinChat])
+  }, [canJoinChat, roomCode])
 
   const addMessage = (newMessage) => {
     setMessages(messages => [...messages, newMessage]);
@@ -93,9 +90,11 @@ const MusicRoom = () => {
   const handleSendMessage = () => {
     if (message !== "") {
       let new_message = {
-        user: 1,
-        text: message,
-        time: new Date().toLocaleDateString(),
+        command: 'get_new_message',
+        sender: 2,
+        room: roomCode,
+        content: message,
+        timestamp: new Date(),
       }
       WebSocketInstance.sendMessage(new_message);
       setMessage("");
@@ -111,6 +110,7 @@ const MusicRoom = () => {
       roomCode: roomCode
     }).then((response) => {
       sdk.disconnect();
+      WebSocketInstance.fetchListeners(roomCode);
       history.push("/");
     }).catch(err => {
       console.log(err);
@@ -152,17 +152,23 @@ const MusicRoom = () => {
     );
   }
 
-
+  /* Temporary methods for development: */
   const HostSendsCurrentSong = () => {
-    if (isHost && sdk) sdk.getCurrentState().then(state => WebSocketInstance.sendMessage(state));
+    if (isHost && sdk) sdk.getCurrentState().then(
+      state => WebSocketInstance.sendMessage({...state, command: "get_current_song"})
+    );
   }
 
   const ClientRequestsCurrentSong = () => {
-    if (!isHost) WebSocketInstance.sendMessage({'Request': 'Current'})
+    if (!isHost) WebSocketInstance.sendMessage({command: 'request_fetch'})
   }
 
   const ClientReceivesCurrentSong = (state) => {
     if (!isHost) console.log(state);
+  }
+
+  const FetchChatMessages = () => {
+    WebSocketInstance.fetchChatMessages(roomCode);
   }
 
 
@@ -187,7 +193,7 @@ const MusicRoom = () => {
                 code={roomCode}
               />
               :
-              <div className="room__progress" style={{paddingTop: "100px", paddingBottom: "100px"}}>
+              <div className="room-progress">
                 <CircularProgress/>
               </div>
           }
@@ -236,7 +242,7 @@ const MusicRoom = () => {
         </Button>
       </Grid>
 
-      <Grid item xs={12} align="center" style={{margin: 100, border: "2px black dashed"}}>
+      <Grid item xs={12} align="center" style={{margin: 100, border: "2px black dashed"}} className="DEBUG">
         <Button
           variant="contained"
           color="primary"
@@ -251,6 +257,14 @@ const MusicRoom = () => {
           onClick={ClientRequestsCurrentSong}
         >
           Request Current Song
+        </Button>
+
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={FetchChatMessages}
+        >
+          Fetch Chat Messages
         </Button>
       </Grid>
     </Grid>
