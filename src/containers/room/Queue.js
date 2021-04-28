@@ -1,3 +1,5 @@
+import { Paper } from "@material-ui/core";
+import Grid from "@material-ui/core/Grid";
 import IconButton from "@material-ui/core/IconButton";
 import DeleteIcon from "@material-ui/icons/Delete";
 import React from "react";
@@ -18,7 +20,7 @@ const Queue = ({queue, setQueue}) => {
   }
 
   return (
-    <div className="queue">
+    <Grid className="queue" component={Paper}>
       <h2>Playlist:</h2>
       {queue.length > 0 && queue.map((track, index) => (
         <div key={index + track.name} className="queue-item">
@@ -35,7 +37,7 @@ const Queue = ({queue, setQueue}) => {
           </div>
         </div>
       ))}
-    </div>
+    </Grid>
   )
 }
 

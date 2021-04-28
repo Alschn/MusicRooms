@@ -1,3 +1,4 @@
+import { Paper } from "@material-ui/core";
 import Grid from "@material-ui/core/Grid";
 import React, { useEffect, useState } from "react";
 import axiosClient from "../../utils/axiosClient";
@@ -20,7 +21,7 @@ const Recommended = ({track_id}) => {
   }, [track_id])
 
   return (
-    <Grid container direction="row" className="recommended-container">
+    <Grid container direction="row" className="recommended-container" component={Paper}>
       <Grid item xs={12}>
         <h2>Recommended tracks:</h2>
       </Grid>
