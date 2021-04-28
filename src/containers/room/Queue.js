@@ -1,19 +1,9 @@
 import IconButton from "@material-ui/core/IconButton";
-import makeStyles from "@material-ui/core/styles/makeStyles";
 import DeleteIcon from "@material-ui/icons/Delete";
 import React from "react";
-import "./queue.scss"
-
-const useStyles = makeStyles((theme) => ({
-  root: {
-    "& > *": {
-      margin: theme.spacing(1),
-    },
-  },
-}));
+import "./queue.scss";
 
 const Queue = ({queue, setQueue}) => {
-  const classes = useStyles();
 
   const deleteItemFromQueue = (index) => {
     let _queue = queue;
@@ -28,21 +18,19 @@ const Queue = ({queue, setQueue}) => {
   }
 
   return (
-    <div className={"queue"}>
-      <h2>Playlist</h2>
+    <div className="queue">
+      <h2>Playlist:</h2>
       {queue.length > 0 && queue.map((track, index) => (
-        <div key={index + track.name} className={"queue-item"}>
-          <img className="que-img" src={track.album.images[2].url} alt="album-art"/>
-          <p>
+        <div key={index + track.name} className="queue-item">
+          <img className="queue-item-img" src={track.album.images[2].url} alt="album-cover"/>
+          <p className="queue-item-desc">
             {track.name} - {getArtistsString(track.artists)}
           </p>
-          <div className={classes.root}>
-            <IconButton aria-label="delete">
-              <DeleteIcon
-                onClick={() => {
-                  deleteItemFromQueue(index)
-                }}
-              />
+          <div className="queue-item-delete">
+            <IconButton aria-label="delete" onClick={() => {
+              deleteItemFromQueue(index)
+            }}>
+              <DeleteIcon/>
             </IconButton>
           </div>
         </div>

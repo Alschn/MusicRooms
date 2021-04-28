@@ -1,5 +1,4 @@
 .queue {
-  width: 90%;
   margin: 20px auto;
   border: 3px dotted #343434;
   border-radius: 25px;
@@ -13,17 +12,22 @@
   justify-content: flex-start;
   margin-top: 10px;
 
-  p {
+  .queue-item-desc {
     font-weight: bold;
     font-size: 13px;
     color: #343434;
     margin: 0 8px;
   }
 
-  img {
+  .queue-item-img {
     width: 80px;
     border-radius: 50%;
     margin: 0 8px;
   }
 
+  .queue-item-delete {
+    & > * {
+      margin: 8px;
+    }
+  }
 }

@@ -1,0 +1,33 @@
+.search-container {
+  width: 100%;
+  position: relative;
+  display: flex;
+
+  .search-bar {
+    width: 100%;
+    outline: none;
+
+    &:focus {
+      color: #343434;
+    }
+  }
+
+  .search-button {
+    border: 1px solid #343434;
+    background: #343434;
+    text-align: center;
+    color: #fff;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+    font-size: 20px;
+  }
+}
+
+.search-item-img {
+  height: 200px;
+  width: 200px;
+  
+  &:hover {
+    cursor: pointer;
+  }
+}

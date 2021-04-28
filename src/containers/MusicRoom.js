@@ -11,8 +11,10 @@ import CreateRoomPage from "./CreateRoomPage";
 import MusicPlayer from "./MusicPlayer";
 import Chat from "./room/Chat"
 import Listeners from "./room/Listeners";
+import Recommended from "./room/Recommended";
 import Search from "./room/Search";
 import { WebPlayerContext } from "./spotify/WebPlayer";
+import "./MusicRoom.scss";
 
 const MusicRoom = () => {
   // Hooks
@@ -169,14 +171,14 @@ const MusicRoom = () => {
   }
 
   return (
-    <Grid container justify="center">
-      <Grid item xs={12} align="center">
+    <Grid container justify="center" className="room-root">
+      <Grid item xs={12} className="room-header">
         <Typography variant="h4" component="h4">
           Code: {roomCode}
         </Typography>
       </Grid>
 
-      <Grid container item xs={8} md={6} lg={8}>
+      <Grid container item xs={8} md={6} lg={8} className="room-left">
         <Grid item xs={12}>
           {
             Object.keys(currentTrack).length !== 0 && deviceID
@@ -185,20 +187,27 @@ const MusicRoom = () => {
                 code={roomCode}
               />
               :
-              <div style={{paddingTop: "100px", paddingBottom: "100px"}}>
+              <div className="room__progress" style={{paddingTop: "100px", paddingBottom: "100px"}}>
                 <CircularProgress/>
               </div>
           }
         </Grid>
 
         {deviceID && (
-          <Grid item xs={12}>
-            <Search/>
-          </Grid>
+          <>
+            <Grid item xs={12}>
+              <Search/>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Recommended track_id={currentTrack.id}/>
+            </Grid>
+          </>
+
         )}
       </Grid>
 
-      <Grid item xs={8} md={6} lg={4}>
+      <Grid item xs={8} md={6} lg={4} className="room-right">
         <Grid container direction='column'>
           <Grid item xs={12}>
             <Listeners listeners={listeners} setListeners={setListeners}/>
