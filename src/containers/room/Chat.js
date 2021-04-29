@@ -9,9 +9,8 @@ import Paper from "@material-ui/core/Paper";
 import TextField from "@material-ui/core/TextField";
 import SendIcon from "@material-ui/icons/Send";
 import TimeAgo from 'javascript-time-ago';
-import React from "react";
-
-const timeAgo = new TimeAgo();
+import en from 'javascript-time-ago/locale/en';
+import React, { useEffect } from "react";
 
 const useStyles = makeStyles(theme => ({
   messageArea: {
@@ -26,11 +25,19 @@ const useStyles = makeStyles(theme => ({
 const Chat = ({currentInput, messages, handleChangeInput, handleSendMessage}) => {
   const classes = useStyles();
 
+  useEffect(() => {
+    try {
+      TimeAgo.addDefaultLocale(en);
+    } catch (err) {
+    }
+  }, [])
+
   const submitMessageWithEnter = e => {
     if (e.key === "Enter") handleSendMessage();
   }
 
   const formatTimestamp = timestamp => {
+    const timeAgo = new TimeAgo('en-US');
     const diff = Date.now() - new Date(timestamp);
     return timeAgo.format(Date.now() - diff);
   }
@@ -73,7 +80,7 @@ const Chat = ({currentInput, messages, handleChangeInput, handleSendMessage}) =>
         </Grid>
       </Grid>
     </Grid>
-  )
-}
+  );
+};
 
 export default Chat;

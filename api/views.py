@@ -49,10 +49,13 @@ class JoinRoom(APIView):
             room_result = Room.objects.filter(code=code)
             if room_result.exists():
                 room = room_result[0]
+                if user.room or user.room == room:
+                    return Response({'Error': 'User is already in room. Cannot join'},
+                                    status=status.HTTP_403_FORBIDDEN)
                 user.room = room
                 user.save(update_fields=['room'])
                 return Response({'Message': 'Room Joined!'}, status=status.HTTP_200_OK)
-            return Response({'Bad Request': 'Invalid Room Code!'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'Not Found': 'Invalid Room!'}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(
             {"Bad Request": 'Invalid post data, did not find a code key'},
@@ -72,16 +75,11 @@ class CreateRoomView(APIView):
             host = request.user
             queryset = Room.objects.filter(host=host)
             if queryset.exists():
-                room = queryset[0]
-                room.guest_can_pause = guest_can_pause
-                room.votes_to_skip = votes_to_skip
-                room.save(update_fields=['guest_can_pause', 'votes_to_skip'])
-                return Response(RoomSerializer(room).data, status=status.HTTP_200_OK)
-            else:
-                room = Room(host=host, guest_can_pause=guest_can_pause, votes_to_skip=votes_to_skip)
-                room.save()
-                host.room = room
-                host.save(update_fields=['room'])
+                return Response({'Error': 'User can only be host of one room'}, status=status.HTTP_403_FORBIDDEN)
+
+            room = Room.objects.create(host=host, guest_can_pause=guest_can_pause, votes_to_skip=votes_to_skip)
+            host.room = room
+            host.save(update_fields=['room'])
             return Response(RoomSerializer(room).data, status=status.HTTP_201_CREATED)
 
         return Response({'Bad Request': 'Invalid data...'}, status=status.HTTP_400_BAD_REQUEST)
@@ -106,10 +104,10 @@ class LeaveRoom(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        try:
-            code = request.data.get('roomCode').rstrip()
-        except AttributeError:
+        code = request.data.get('roomCode', None)
+        if not code:
             return Response({'Error': 'Code parameter not found'}, status=status.HTTP_400_BAD_REQUEST)
+        code.rstrip()
         sender = request.user
         room = Room.objects.filter(code=code)
         if room.exists():
@@ -133,17 +131,16 @@ class UpdateRoom(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = UpdateRoomSerializer
 
-    def patch(self, request, format=None):  # use patch when updating
+    def patch(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            guest_can_pause = serializer.data.get('guest_can_pause')
-            votes_to_skip = serializer.data.get('votes_to_skip')
-            code = serializer.data.get('code')
+            guest_can_pause = serializer.validated_data.get('guest_can_pause')
+            votes_to_skip = serializer.validated_data.get('votes_to_skip')
+            code = serializer.validated_data.get('code')
 
             queryset = Room.objects.filter(code=code)
             if not queryset.exists():
-                return Response({'Message': 'Room not found,'}, status=status.HTTP_404_NOT_FOUND)
-
+                return Response({'Error': 'Room not found! Invalid code.'}, status=status.HTTP_404_NOT_FOUND)
             room = queryset[0]
             user_id = request.user
             if room.host != user_id:
