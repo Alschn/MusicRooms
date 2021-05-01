@@ -8,6 +8,7 @@ import axiosClient from "../utils/axiosClient";
 import { BASE_URL } from "../utils/config";
 import VolumeSlider from "./room/VolumeSlider";
 import { WebPlayerContext } from "./spotify/WebPlayer";
+import { getArtistsString } from "./utilities";
 
 
 const MusicPlayer = () => {
@@ -29,12 +30,6 @@ const MusicPlayer = () => {
     axiosClient.put(BASE_URL + "/spotify/play").then(() => {
     });
   }
-
-  const getArtistsString = (artists) => (
-    artists.reduce((total, {name}, currentIndex, arr) => (
-      total += currentIndex !== arr.length - 1 ? `${name}, ` : name
-    ), ``)
-  )
 
   let {is_playing, progress, total_time} = playbackState;
   let track = currentTrack;

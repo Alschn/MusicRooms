@@ -5,16 +5,17 @@ import Typography from '@material-ui/core/Typography';
 import React, { useCallback, useContext, useEffect, useState } from "react";
 import { useHistory, useParams } from 'react-router-dom';
 import axiosClient from "../utils/axiosClient";
-import { BASE_URL, sample_messages } from "../utils/config";
+import { BASE_URL } from "../utils/config";
 import WebSocketInstance from "../utils/websocketClient";
 import CreateRoomPage from "./CreateRoomPage";
 import MusicPlayer from "./MusicPlayer";
+import "./MusicRoom.scss";
 import Chat from "./room/Chat"
+import HostTracker from "./room/HostTracker";
 import Listeners from "./room/Listeners";
 import Recommended from "./room/Recommended";
 import Search from "./room/Search";
 import { WebPlayerContext } from "./spotify/WebPlayer";
-import "./MusicRoom.scss";
 
 const MusicRoom = () => {
   // Hooks
@@ -68,7 +69,7 @@ const MusicRoom = () => {
         {set_new_message: addMessage},
         {set_fetched_messages: ({messages}) => setMessages([...messages])},
         {set_listeners: ({users}) => setListeners([...users])},
-        {send_current_song: () => HostSendsCurrentSong()},
+        {send_current_song: HostSendsCurrentSong},
         {set_current_song: (playbackState) => ClientReceivesCurrentSong(playbackState)},
       )
     }
@@ -82,6 +83,20 @@ const MusicRoom = () => {
       // }
     }
   }, [canJoinChat, roomCode])
+
+  // useEffect(() => {
+  //   // state polling
+  //   if (isHost && sdk) {
+  //     const interval = setInterval(() => {
+  //       sdk.getCurrentState().then(state => {
+  //           WebSocketInstance.sendMessage({...state, command: "get_current_song"});
+  //           console.log("Sent state");
+  //         }
+  //       ).catch();
+  //     }, 5000)
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [isHost, sdk])
 
   const addMessage = (newMessage) => {
     setMessages(messages => [...messages, newMessage]);
@@ -154,9 +169,11 @@ const MusicRoom = () => {
 
   /* Temporary methods for development: */
   const HostSendsCurrentSong = () => {
-    if (isHost && sdk) sdk.getCurrentState().then(
-      state => WebSocketInstance.sendMessage({...state, command: "get_current_song"})
-    );
+    if (isHost && sdk) sdk.getCurrentState().then(state => {
+        WebSocketInstance.sendMessage({...state, command: "get_current_song"});
+        console.log("Host sent state");
+      }
+    )
   }
 
   const ClientRequestsCurrentSong = () => {
@@ -185,6 +202,11 @@ const MusicRoom = () => {
       </Grid>
 
       <Grid container item xs={8} md={6} lg={8} className="room-left">
+        {!isHost &&
+        (<Grid item xs={12}>
+          <HostTracker connected={canJoinChat} playbackState={ClientReceivesCurrentSong}/>
+        </Grid>)}
+
         <Grid item xs={12}>
           {
             Object.keys(currentTrack).length !== 0 && deviceID
