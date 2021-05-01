@@ -31,3 +31,17 @@
     cursor: pointer;
   }
 }
+
+@media (max-width: 1200px) {
+  .search-item-img {
+    height: 150px;
+    width: 150px;
+  }
+}
+
+@media (max-width: 960px) {
+  .search-item-img {
+    height: 100px;
+    width: 100px;
+  }
+}

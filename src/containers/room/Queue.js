@@ -4,6 +4,7 @@ import IconButton from "@material-ui/core/IconButton";
 import DeleteIcon from "@material-ui/icons/Delete";
 import React from "react";
 import "./queue.scss";
+import { getArtistsString } from "../utilities";
 
 const Queue = ({queue, setQueue}) => {
 
@@ -11,12 +12,6 @@ const Queue = ({queue, setQueue}) => {
     let _queue = queue;
     _queue.splice(index, 1)
     setQueue([..._queue])
-  }
-
-  const getArtistsString = (artists) => {
-    return artists.reduce((total, {name}, currentIndex, arr) => (
-      total += currentIndex !== arr.length - 1 ? `${name}, ` : name
-    ), ``)
   }
 
   return (

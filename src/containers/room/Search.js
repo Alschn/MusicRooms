@@ -5,6 +5,7 @@ import TextField from "@material-ui/core/TextField";
 import React, { useRef, useState } from "react";
 import axiosClient from "../../utils/axiosClient";
 import { BASE_URL } from "../../utils/config";
+import { getArtistsString } from "../utilities";
 import Queue from "./Queue";
 import "./search.scss";
 
@@ -39,7 +40,8 @@ const Search = () => {
     // search field input
     const [currentQuery, setCurrentQuery] = useState("");
 
-    const [resultsCount, setResultsCount] = useState(5);
+    // spotify data pagination
+    const [resultsLimit, setResultsLimit] = useState(12);
     const [nextPage, setNextPage] = useState(null);
 
     // search results
@@ -64,6 +66,7 @@ const Search = () => {
       axiosClient.post(BASE_URL + "/spotify/search", {
         query: JSON.stringify(currentQuery),
         type: "track",
+        limit: resultsLimit,
       }).then((response) => {
         const {
           data: {
@@ -108,7 +111,7 @@ const Search = () => {
           {results && results.map((item, index) => (
             <Grid
               item
-              xs={12} md={6} lg={3}
+              xs={6} md={6} lg={3}
               onClick={() => addToQueue(item)}
               className={classes.itemCard}
               key={`${index}. ${item.name}`}
@@ -119,6 +122,10 @@ const Search = () => {
 
               <Grid item xs={12}>
                 {JSON.stringify(item.name)}
+              </Grid>
+
+              <Grid item xs={12}>
+                {getArtistsString(item.artists)}
               </Grid>
             </Grid>
           ))}
