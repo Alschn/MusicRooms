@@ -75,10 +75,10 @@ def set_volume(user, value):
     return execute_spotify_api_call(user, f"player/volume?volume_percent={value}", put_=True)
 
 
-def search_for_items(user, query, types):
+def search_for_items(user, query, types, limit=12):
     return execute_spotify_api_call(
         user,
-        endpoint=f"search?q={query}&type={types}",
+        endpoint=f"search?q={query}&type={types}&limit={limit}",
         other_base_url=BASE_URL
     )
 
@@ -87,5 +87,5 @@ def add_to_queue(user, uri):
     return execute_spotify_api_call(user, f"player/queue?uri={uri}", post_=True)
 
 
-def get_recommendations(user, track_id):
-    return execute_spotify_api_call(user, f"recommendations?seed_tracks={track_id}", other_base_url=BASE_URL)
+def get_recommendations(user, track_id, limit=8):
+    return execute_spotify_api_call(user, f"recommendations?seed_tracks={track_id}&limit={limit}", other_base_url=BASE_URL)

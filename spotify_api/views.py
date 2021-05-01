@@ -185,7 +185,11 @@ class PerformSearch(APIView):
         query = request.data['query']
         types = request.data['type']
 
-        response = search_for_items(user=sender, query=query, types=types)
+        if 'limit' in request.data and 50 >= request.data['limit'] >= 1:
+            limit = request.data['limit']
+            response = search_for_items(user=sender, query=query, types=types, limit=limit)
+        else:
+            response = search_for_items(user=sender, query=query, types=types)
         # do the error handling
         return Response(response, status=status.HTTP_200_OK)
 
@@ -218,7 +222,12 @@ class GetRecommendations(APIView):
             return Response({}, status=status.HTTP_400_BAD_REQUEST)
 
         track = str(request.data['seed_tracks'])
-        response = get_recommendations(user=sender, track_id=track)
+
+        if 'limit' in request.data and 100 >= request.data['limit'] >= 1:
+            limit = request.data['limit']
+            response = get_recommendations(user=sender, track_id=track, limit=limit)
+        else:
+            response = get_recommendations(user=sender, track_id=track)
         # handle errors
         return Response(response, status=status.HTTP_200_OK)
 
