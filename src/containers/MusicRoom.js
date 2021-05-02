@@ -3,19 +3,21 @@ import CircularProgress from "@material-ui/core/CircularProgress";
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import React, { useCallback, useContext, useEffect, useState } from "react";
-import { connect } from "react-redux";
 import { useHistory, useParams } from 'react-router-dom';
 import axiosClient from "../utils/axiosClient";
-import { BASE_URL, sample_messages } from "../utils/config";
+import { BASE_URL } from "../utils/config";
 import WebSocketInstance from "../utils/websocketClient";
 import CreateRoomPage from "./CreateRoomPage";
 import MusicPlayer from "./MusicPlayer";
+import "./MusicRoom.scss";
 import Chat from "./room/Chat"
+import HostTracker from "./room/HostTracker";
 import Listeners from "./room/Listeners";
+import Recommended from "./room/Recommended";
 import Search from "./room/Search";
 import { WebPlayerContext } from "./spotify/WebPlayer";
 
-const MusicRoom = (props) => {
+const MusicRoom = () => {
   // Hooks
   let history = useHistory();
   const {roomCode} = useParams();
@@ -29,9 +31,12 @@ const MusicRoom = (props) => {
   const [isHost, setIsHost] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
+  // listeners inside the room
+  const [listeners, setListeners] = useState([]);
+
   // chat input & content
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState(sample_messages);
+  const [messages, setMessages] = useState([]);
 
   // initialize websocket connection only if user is in valid room
   const [canJoinChat, setCanJoinChat] = useState(false);
@@ -60,22 +65,38 @@ const MusicRoom = (props) => {
 
   useEffect(() => {
     if (canJoinChat) {
-      WebSocketInstance.addCallbacks(() => {
-      }, addMessage);
-    }
-    return () => {
-      WebSocketInstance.callbacks = {};
+      WebSocketInstance.setCallbacks(
+        {set_new_message: addMessage},
+        {set_fetched_messages: ({messages}) => setMessages([...messages])},
+        {set_listeners: ({users}) => setListeners([...users])},
+        {send_current_song: HostSendsCurrentSong},
+        {set_current_song: (playbackState) => ClientReceivesCurrentSong(playbackState)},
+      )
     }
   }, [canJoinChat])
 
   useEffect(() => {
     if (canJoinChat) {
       WebSocketInstance.connect(roomCode);
-      return () => {
-        WebSocketInstance.disconnect();
-      }
+      // return () => {
+      //   WebSocketInstance.disconnect();
+      // }
     }
-  }, [canJoinChat])
+  }, [canJoinChat, roomCode])
+
+  // useEffect(() => {
+  //   // state polling
+  //   if (isHost && sdk) {
+  //     const interval = setInterval(() => {
+  //       sdk.getCurrentState().then(state => {
+  //           WebSocketInstance.sendMessage({...state, command: "get_current_song"});
+  //           console.log("Sent state");
+  //         }
+  //       ).catch();
+  //     }, 5000)
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [isHost, sdk])
 
   const addMessage = (newMessage) => {
     setMessages(messages => [...messages, newMessage]);
@@ -84,9 +105,11 @@ const MusicRoom = (props) => {
   const handleSendMessage = () => {
     if (message !== "") {
       let new_message = {
-        user: 1,
-        text: message,
-        time: new Date().toLocaleDateString(),
+        command: 'get_new_message',
+        sender: 2,
+        room: roomCode,
+        content: message,
+        timestamp: new Date(),
       }
       WebSocketInstance.sendMessage(new_message);
       setMessage("");
@@ -102,6 +125,7 @@ const MusicRoom = (props) => {
       roomCode: roomCode
     }).then((response) => {
       sdk.disconnect();
+      WebSocketInstance.fetchListeners(roomCode);
       history.push("/");
     }).catch(err => {
       console.log(err);
@@ -143,19 +167,46 @@ const MusicRoom = (props) => {
     );
   }
 
+  /* Temporary methods for development: */
+  const HostSendsCurrentSong = () => {
+    if (isHost && sdk) sdk.getCurrentState().then(state => {
+        WebSocketInstance.sendMessage({...state, command: "get_current_song"});
+        console.log("Host sent state");
+      }
+    )
+  }
+
+  const ClientRequestsCurrentSong = () => {
+    if (!isHost) WebSocketInstance.sendMessage({command: 'request_fetch'})
+  }
+
+  const ClientReceivesCurrentSong = (state) => {
+    if (!isHost) console.log(state);
+  }
+
+  const FetchChatMessages = () => {
+    WebSocketInstance.fetchChatMessages(roomCode);
+  }
+
+
   if (showSettings) {
     return renderSettings();
   }
 
   return (
-    <Grid container justify="center">
-      <Grid item xs={12} align="center">
+    <Grid container justify="center" className="room-root">
+      <Grid item xs={12} className="room-header">
         <Typography variant="h4" component="h4">
           Code: {roomCode}
         </Typography>
       </Grid>
 
-      <Grid container item xs={8} md={6} lg={8} justify="center" spacing={0}>
+      <Grid container item xs={8} md={6} lg={8} className="room-left">
+        {!isHost &&
+        (<Grid item xs={12}>
+          <HostTracker connected={canJoinChat} playbackState={ClientReceivesCurrentSong}/>
+        </Grid>)}
+
         <Grid item xs={12}>
           {
             Object.keys(currentTrack).length !== 0 && deviceID
@@ -164,31 +215,41 @@ const MusicRoom = (props) => {
                 code={roomCode}
               />
               :
-              <div style={{paddingTop: "100px", paddingBottom: "100px"}}>
+              <div className="room-progress">
                 <CircularProgress/>
               </div>
           }
         </Grid>
 
         {deviceID && (
-          <Grid item xs={12}>
-            <Search/>
-          </Grid>
+          <>
+            <Grid item xs={12}>
+              <Search/>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Recommended track_id={currentTrack.id}/>
+            </Grid>
+          </>
+
         )}
       </Grid>
 
-      <Grid container item xs={12} md={6} lg={4} justify="center" spacing={0}>
-        <Grid item xs={12}>
-          <Listeners/>
+      <Grid item xs={8} md={6} lg={4} className="room-right">
+        <Grid container direction='column'>
+          <Grid item xs={12}>
+            <Listeners listeners={listeners} setListeners={setListeners}/>
+          </Grid>
+          <Grid item xs={12}>
+            <Chat
+              messages={messages}
+              handleChangeInput={handleInputChange}
+              handleSendMessage={handleSendMessage}
+              currentInput={message}
+            />
+          </Grid>
         </Grid>
-        <Grid item xs={12}>
-          <Chat
-            messages={messages}
-            handleChangeInput={handleInputChange}
-            handleSendMessage={handleSendMessage}
-            currentInput={message}
-          />
-        </Grid>
+
       </Grid>
 
       {isHost && renderSettingsButton()}
@@ -203,16 +264,33 @@ const MusicRoom = (props) => {
         </Button>
       </Grid>
 
+      <Grid item xs={12} align="center" style={{margin: 100, border: "2px black dashed"}} className="DEBUG">
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={HostSendsCurrentSong}
+        >
+          Send Current Song
+        </Button>
+
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={ClientRequestsCurrentSong}
+        >
+          Request Current Song
+        </Button>
+
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={FetchChatMessages}
+        >
+          Fetch Chat Messages
+        </Button>
+      </Grid>
     </Grid>
   );
 }
 
-
-const mapStateToProps = state => {
-  return {
-    authenticated: state.auth.token !== null,
-    token: state.auth.token,
-  };
-};
-
-export default connect(mapStateToProps, null)(MusicRoom);
+export default MusicRoom;

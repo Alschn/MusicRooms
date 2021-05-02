@@ -21,6 +21,9 @@ class WebSocketService {
     this.socketRef = new WebSocket(path);
     this.socketRef.onopen = () => {
       console.log("WebSocket open");
+
+      this.fetchListeners(roomCode);
+      this.fetchChatMessages(roomCode);
     };
     this.socketRef.onmessage = e => {
       // actions handler
@@ -41,25 +44,55 @@ class WebSocketService {
 
   socketMessageHandler(data) {
     const parsedData = JSON.parse(data);
-    const command = parsedData.command;
+    // if there are no callbacks, cannot respond to command
     if (Object.keys(this.callbacks).length === 0) {
-      // if there are no callbacks, cannot respond to command
       return;
     }
-    if (command === "new_message") {
-      // send new message command
-      const {text, time} = parsedData;
-      this.callbacks[command]({text, time, user: 1});
-    }
-    if (command === "messages") {
-      this.callbacks[command](parsedData.messages);
+
+    const command = parsedData.command;
+    switch (command) {
+      case "set_new_message":
+        const {sender, content, timestamp} = parsedData;
+        this.callbacks[command]({sender, content, timestamp})
+        break;
+      case "set_fetched_messages":
+        this.callbacks[command](parsedData);
+        break;
+      case "set_listeners":
+        this.callbacks[command](parsedData);
+        break;
+      case "send_current_song":
+        this.callbacks[command](parsedData);
+        break;
+      case "set_current_song":
+        this.callbacks[command](parsedData);
+        break;
+      default:
+        break;
     }
   }
 
-  addCallbacks(messagesCallback, newMessageCallback) {
-    this.callbacks["messages"] = messagesCallback;
-    this.callbacks["new_message"] = newMessageCallback;
+  setCallbacks(...newCallbacks) {
+    // accepts multiple objects: {cb: (arg) => {// body}}
+    newCallbacks.forEach((callbackObject) => {
+      this.callbacks = {...this.callbacks, ...callbackObject}
+    });
   }
+
+  fetchChatMessages(room) {
+    this.sendMessage({
+      command: "fetch_messages",
+      room_code: room
+    });
+  }
+
+  fetchListeners(room) {
+    this.sendMessage({
+      command: 'get_listeners',
+      room_code: room
+    })
+  }
+
 
   sendMessage(data) {
     try {

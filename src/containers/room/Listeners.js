@@ -9,24 +9,14 @@ import React, { useState } from "react";
 const useStyles = makeStyles((theme) => ({
   root: {
     width: '100%',
+    marginBottom: 10,
     // maxWidth: 360,
     // backgroundColor: theme.palette.background.paper,
-    marginBottom: 10,
   },
 }));
 
-const Listeners = (props) => {
+const Listeners = ({listeners, setListeners}) => {
   const classes = useStyles();
-
-  const [listeners, setListeners] = useState([{
-    name: 'Adam',
-  }, {
-    name: 'Damian'
-  }]);
-
-  const addListeners = (listener) => {
-    setListeners((state) => [...state, listener])
-  }
 
   return (
     <List
@@ -37,8 +27,8 @@ const Listeners = (props) => {
           Listeners ({listeners.length}):
         </ListSubheader>}
     >
-      {listeners.map((listener, index) => (<ListItem key={`listener${index}`}>
-        <ListItemText>{listener.name}</ListItemText>
+      {listeners.map(({username}, index) => (<ListItem key={`listener${index}`}>
+        <ListItemText>{username}</ListItemText>
       </ListItem>))}
     </List>
   );
