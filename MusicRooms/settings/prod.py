@@ -7,6 +7,7 @@ from .base import *
 DEBUG = False
 ALLOWED_HOSTS += ['http://domain.com']
 WSGI_APPLICATION = 'core.wsgi.prod.application'
+ASGI_APPLICATION = 'MusicRooms.routing.application'
 
 DATABASES = {
     'default': {
@@ -38,4 +39,14 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [os.environ.get('REDIS_URL', 'redis://localhost:6379')],
+        },
+        "ROUTING": "rooms.routing.websocket_urlpatterns",
+    },
+}
+
+# STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'

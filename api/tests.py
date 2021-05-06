@@ -75,10 +75,10 @@ class MusicRoomsAPIViewsTests(TestCase):
 
     def test_join_room_no_code(self):
         self._require_login_and_auth()
-        self.assertFalse(self.user.room)
+        self.assertIsNone(self.user.room)
         response = self.client.post(f'/api/join-room')
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
-        self.assertFalse(self.user.room)
+        self.assertIsNone(self.user.room)
 
     def test_join_room_but_user_already_in_room(self):
         self._require_login_and_auth()
@@ -123,7 +123,7 @@ class MusicRoomsAPIViewsTests(TestCase):
 
     def test_create_room_user_not_host(self):
         self._require_login_and_auth(other_user=True)
-        self.assertFalse(self.other_user.room)
+        self.assertIsNone(self.other_user.room)
 
         response = self.client.post(f'/api/create-room', data={
             "votes_to_skip": 5,
@@ -136,19 +136,46 @@ class MusicRoomsAPIViewsTests(TestCase):
         self.assertEqual(new_room[0].guest_can_pause, True)
 
     def test_leave_room_no_code(self):
-        pass
+        self._require_login_and_auth(other_user=True)
+        response = self.client.post(f'/api/leave-room', data={})
+        self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
     def test_leave_room_when_host(self):
-        pass
+        self._require_login_and_auth(other_user=True)
+        new_room = Room.objects.create(code="test2", host=self.other_user, guest_can_pause=True, votes_to_skip=5)
+        self.other_user.room = new_room
+        response = self.client.post(f'/api/leave-room', data={
+            'roomCode': 'test2',
+        })
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.other_user.refresh_from_db()
+        self.assertIsNone(self.other_user.room)
+
+        queryset = Room.objects.filter(code="test2")
+        self.assertEqual(queryset.count(), 0)
 
     def test_leave_room_when_guest(self):
-        pass
+        self._require_login_and_auth(other_user=True)
+        self.other_user.room = Room.objects.get(code="test")
+        response = self.client.post(f'/api/leave-room', data={
+            'roomCode': 'test',
+        })
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertIsNone(self.other_user.room)
 
     def test_leave_wrong_room(self):
-        pass
+        self._require_login_and_auth(other_user=True)
+        response = self.client.post(f'/api/leave-room', data={
+            'roomCode': 'test',
+        })
+        self.assertEqual(response.status_code, HTTP_403_FORBIDDEN)
 
     def test_leave_room_does_not_exist(self):
-        pass
+        self._require_login_and_auth(other_user=True)
+        response = self.client.post(f'/api/leave-room', data={
+            'roomCode': 'testXDD',
+        })
+        self.assertEqual(response.status_code, HTTP_404_NOT_FOUND)
 
     def test_update_room_not_host(self):
         self._require_login_and_auth(other_user=True)
