@@ -10,6 +10,20 @@ Music Rooms web application built with Django Rest Framework, Django Channels, W
 </p>
 </div>
 
+## Motivation behind this project and features:
+This project was inspired by [TechWithTim's Music Controller](https://youtu.be/JD-age0BPVo). 
+Initially I was following the tutorial to learn Django Rest Framework paired with React but it quickly came to an end and I was not satisfied with the end results. 
+Tim's application turned out to be flawed and missing features I hoped for. His app was designed to be run in local network and it was not supposed to be playing music, which seemed pointless to me.  
+
+My goal was to create a Web Player, whose state would be synchronized among all listeners. 
+I used Spotify Web Playback SDK (so that music would actually be heard inside the browser) and websockets (Django Channels + Websocket API) to implement synchronization and add chat to rooms. 
+I also added social auth using Spotify Accounts - token based authentication between backend and frontend using django-all-auth and Redux. 
+I rewrote most of the class components into functional components in order to make use of hooks. 
+I wrote unit tests to test api endpoints and set up tests pipelines using Github Workflows 
+(I am planning to add more api tests, tests related to websocket communication and frontend tests).  
+
+I'd love to use this application with my friends one day.
+
 
 ## Used frameworks, libraries and tools:
 #### Backend:
@@ -83,7 +97,7 @@ npm start
 ## To do:
 - Web Player synchronization for every user (started working on that)
 - Set up Redis channel layer ?
-- Music room styling
+- Music room and background styling
 - Error handling (make ws reconnect, handle backend errors)
 - Add api, rooms (async stuff), spotify_api (if it is possible) tests
 - Learn how to write frontend tests (Jest, Cypress)
