@@ -38,10 +38,10 @@ class Room(models.Model):
         return users
 
     def get_all_messages(self):
-        return self.messages.filter(room=self).reverse()
+        return self.messages.filter(room=self)
 
     def get_last_n_messages(self, n):
-        return self.get_all_messages()[:n]
+        return reversed(self.get_all_messages()[:n])
 
     def get_all_messages_by(self, user):
         return self.messages.filter(room=self, sender=user).reverse()
