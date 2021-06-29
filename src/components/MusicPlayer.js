@@ -3,16 +3,16 @@ import PauseIcon from "@material-ui/icons/Pause";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import SkipNextIcon from "@material-ui/icons/SkipNext";
 import SkipPreviousIcon from '@material-ui/icons/SkipPrevious';
-import React, { useContext } from "react";
+import React from "react";
+import { usePlaybackState } from "react-spotify-web-playback-sdk";
 import axiosClient from "../utils/axiosClient";
 import { BASE_URL } from "../utils/config";
 import VolumeSlider from "./room/VolumeSlider";
-import { WebPlayerContext } from "./spotify/WebPlayer";
 import { getArtistsString } from "./utilities";
 
 
 const MusicPlayer = () => {
-  const {playbackState, currentTrack} = useContext(WebPlayerContext);
+  const playbackState = usePlaybackState();
 
   const skipSong = (forward = true) => {
     axiosClient.post(BASE_URL + "/spotify/skip", {
@@ -22,22 +22,22 @@ const MusicPlayer = () => {
   }
 
   const pauseSong = () => {
-    axiosClient.put(BASE_URL + "/spotify/pause").then(() => {
+    axiosClient.put(BASE_URL + "/spotify/pause", {}).then(() => {
     });
   }
 
   const playSong = () => {
-    axiosClient.put(BASE_URL + "/spotify/play").then(() => {
+    axiosClient.put(BASE_URL + "/spotify/play", {}).then(() => {
     });
   }
 
-  let {is_playing, progress, total_time} = playbackState;
-  let track = currentTrack;
+  const isPlaying = () => playbackState?.paused;
 
-  let artists_str = getArtistsString(track.artists);
+  const track = playbackState?.track_window.current_track;
+  const artists_str = getArtistsString(track.artists);
 
-  let songProgressPercentage =
-    (progress / total_time) * 100;
+  const songProgressPercentage =
+    (playbackState.position / playbackState.duration) * 100;
 
   return (
     <Card className="player">
@@ -62,10 +62,10 @@ const MusicPlayer = () => {
 
             <IconButton
               onClick={() =>
-                is_playing ? pauseSong() : playSong()
+                isPlaying ? pauseSong() : playSong()
               }
             >
-              {is_playing ? <PauseIcon/> : <PlayArrowIcon/>}
+              {isPlaying ? <PauseIcon/> : <PlayArrowIcon/>}
             </IconButton>
             <IconButton onClick={() => skipSong()}>
               <SkipNextIcon/>

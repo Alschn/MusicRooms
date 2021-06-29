@@ -4,6 +4,7 @@ import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import React, { useCallback, useContext, useEffect, useState } from "react";
 import { useHistory, useParams } from 'react-router-dom';
+import { usePlaybackState, usePlayerDevice } from "react-spotify-web-playback-sdk";
 import axiosClient from "../utils/axiosClient";
 import { BASE_URL } from "../utils/config";
 import WebSocketInstance from "../utils/websocketClient";
@@ -15,7 +16,7 @@ import HostTracker from "./room/HostTracker";
 import Listeners from "./room/Listeners";
 import Recommended from "./room/Recommended";
 import Search from "./room/Search";
-import { WebPlayerContext } from "./spotify/WebPlayer";
+
 
 const MusicRoom = () => {
   // Hooks
@@ -23,7 +24,9 @@ const MusicRoom = () => {
   const {roomCode} = useParams();
 
   // Props from parent - Web Player Context
-  const {sdk, deviceID, currentTrack, playFromDevice, setCanLoadSDK} = useContext(WebPlayerContext);
+
+  const playbackState = usePlaybackState();
+  const device = usePlayerDevice();
 
   // room state
   const [votesToSkip, setVotesToSkip] = useState(2);
@@ -47,9 +50,9 @@ const MusicRoom = () => {
         setVotesToSkip(response.data.votes_to_skip);
         setGuestCanPause(response.data.guest_can_pause);
         setIsHost(response.data.is_host);
-        setCanLoadSDK(true);
+        // setCanLoadSDK(true);
         setCanJoinChat(true);
-      }).catch(() => {
+      }).catch((err) => {
         history.push("/");
       }
     );
@@ -59,9 +62,9 @@ const MusicRoom = () => {
     getRoomDetails();
   }, [getRoomDetails])
 
-  useEffect(() => {
-    if (deviceID) playFromDevice(deviceID);
-  }, [deviceID])
+  // useEffect(() => {
+  //   if (deviceID) playFromDevice(deviceID);
+  // }, [deviceID])
 
   useEffect(() => {
     if (canJoinChat) {
@@ -124,7 +127,6 @@ const MusicRoom = () => {
     axiosClient.post(BASE_URL + "/api/leave-room", {
       roomCode: roomCode
     }).then((response) => {
-      sdk.disconnect();
       WebSocketInstance.fetchListeners(roomCode);
       history.push("/");
     }).catch(err => {
@@ -169,11 +171,10 @@ const MusicRoom = () => {
 
   /* Temporary methods for development: */
   const HostSendsCurrentSong = () => {
-    if (isHost && sdk) sdk.getCurrentState().then(state => {
-        WebSocketInstance.sendMessage({...state, command: "get_current_song"});
-        console.log("Host sent state");
-      }
-    )
+    if (isHost && playbackState !== null) {
+      WebSocketInstance.sendMessage({...playbackState, command: "get_current_song"});
+      console.log("Host sent state");
+    }
   }
 
   const ClientRequestsCurrentSong = () => {
@@ -209,7 +210,7 @@ const MusicRoom = () => {
 
         <Grid item xs={12}>
           {
-            Object.keys(currentTrack).length !== 0 && deviceID
+            playbackState !== null
               ?
               <MusicPlayer
                 code={roomCode}
@@ -221,14 +222,14 @@ const MusicRoom = () => {
           }
         </Grid>
 
-        {deviceID && (
+        {device && (
           <>
             <Grid item xs={12}>
               <Search/>
             </Grid>
 
             <Grid item xs={12}>
-              <Recommended track_id={currentTrack.id}/>
+              <Recommended track_id={''}/>
             </Grid>
           </>
 

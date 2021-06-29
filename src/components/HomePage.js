@@ -6,6 +6,7 @@ import 'react-spotify-auth/dist/index.css';
 import { authSpotifyLogin } from "../store/actions/auth";
 import axiosClient from "../utils/axiosClient";
 import { BASE_URL, CLIENT_ID, REDIRECT_URI } from "../utils/config"
+import SpotifyLogin from "./spotify/SpotifyButton";
 
 const HomePage = ({history, error, authenticated}) => {
   // probably there should be another reducer for fetching data
@@ -81,18 +82,7 @@ const HomePage = ({history, error, authenticated}) => {
           </Grid>
         ) : (
           <Grid item xs={12} align="center">
-            <SpotifyAuth
-              redirectUri={REDIRECT_URI}
-              clientID={CLIENT_ID}
-              scopes={
-                [Scopes.all]
-              }
-              onAccessToken={token => {
-                this.handleSpotifyLogin(token);
-                localStorage.setItem('SpotifyToken', token);
-              }}
-            />
-
+            <SpotifyLogin/>
             {error && <p>{this.props.error.message}</p>}
           </Grid>
         )}

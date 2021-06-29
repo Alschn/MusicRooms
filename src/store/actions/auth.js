@@ -39,11 +39,13 @@ export const checkAuthTimeout = expirationTime => {
   };
 };
 
-export const authSpotifyLogin = token => {
+export const authSpotifyLogin = (response) => {
   return dispatch => {
     dispatch(authStart());
-    axios.post(`${BASE_URL}/rest-auth/spotify/`, {
-      access_token: token
+    axios.post(`${BASE_URL}/api/auth/login`, {
+      access_token: response.data.access_token,
+      refresh_token: response.data.refresh_token,
+      expires_in: response.data.expires_in,
     }).then(
       res => {
         const api_token = res.data.key;
