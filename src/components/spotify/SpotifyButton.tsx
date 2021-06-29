@@ -4,7 +4,7 @@ import axios from "axios";
 import { BASE_URL } from "../../utils/config";
 
 const SpotifyLogin = () => {
-  const handleSpotifyLogin = () => {
+  const handleSpotifyLogin = (): void => {
     axios.get(`${BASE_URL}/api/spotify-url`).then(
       (res) => {
         const {data: {url}} = res;
@@ -18,6 +18,11 @@ const SpotifyLogin = () => {
       onClick={handleSpotifyLogin}
       variant="contained"
       color="primary"
+      id="spotify-button"
+      style={{
+        background: '#1DB954',
+        color: 'white'
+      }}
     >
       Log in with Spotify
     </Button>

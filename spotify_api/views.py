@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from spotify_api.models import Vote
-from .credentials import REDIRECT_URI, CLIENT_ID, CLIENT_SECRET, API_URL
+from .credentials import REDIRECT_URI, CLIENT_ID, CLIENT_SECRET
 from .permissions import HasSpotifyToken
 from .utils import (
     execute_spotify_api_call,
@@ -24,6 +24,7 @@ from .utils import (
     search_for_items,
     add_to_queue,
     get_recommendations,
+    get_user_token,
 )
 
 SCOPES = [
@@ -85,6 +86,7 @@ class GetSpotifyAccessToken(APIView):
 
 
 class SpotifyLogin(SocialLoginView):
+    """"""
     adapter_class = SpotifyOAuth2Adapter
     serializer_class = SocialLoginSerializer
 
@@ -108,7 +110,19 @@ class SpotifyLogin(SocialLoginView):
         return serializer_class(*args, **kwargs)
 
 
+class GetCurrentSpotifyToken(APIView):
+    """api/spotify/token"""
+    permission_classes = [IsAuthenticated, HasSpotifyToken]
+
+    def get(self, request, *args, **kwargs):
+        # permission granted, it means there is a token
+        user = request.user
+        token = get_user_token(user)
+        return Response({'token': token.token}, status=status.HTTP_200_OK)
+
+
 class CurrentSong(APIView):
+    """"""
     permission_classes = [IsAuthenticated, HasSpotifyToken]
 
     def post(self, request, *args, **kwargs):
@@ -168,6 +182,7 @@ class CurrentSong(APIView):
 
 
 class PauseSong(APIView):
+    """"""
     permission_classes = [IsAuthenticated, HasSpotifyToken]
 
     def put(self, request, *args, **kwargs):
@@ -185,6 +200,7 @@ class PauseSong(APIView):
 
 
 class PlaySong(APIView):
+    """"""
     permission_classes = [IsAuthenticated, HasSpotifyToken]
 
     def put(self, request, *args, **kwargs):
@@ -202,6 +218,7 @@ class PlaySong(APIView):
 
 
 class SkipSong(APIView):
+    """"""
     permission_classes = [IsAuthenticated, HasSpotifyToken]
 
     def post(self, request, *args, **kwargs):
@@ -228,6 +245,7 @@ class SkipSong(APIView):
 
 
 class SetVolume(APIView):
+    """"""
     permission_classes = [IsAuthenticated, HasSpotifyToken]
 
     def put(self, request, *args, **kwargs):
@@ -249,6 +267,7 @@ class SetVolume(APIView):
 
 
 class PerformSearch(APIView):
+    """"""
     permission_classes = [IsAuthenticated, HasSpotifyToken]
 
     def post(self, request, *args, **kwargs):
@@ -271,6 +290,7 @@ class PerformSearch(APIView):
 
 
 class QueueHandler(APIView):
+    """"""
     permission_classes = [IsAuthenticated, HasSpotifyToken]
 
     def post(self, request, *args, **kwargs):
@@ -289,6 +309,7 @@ class QueueHandler(APIView):
 
 
 class GetRecommendations(APIView):
+    """"""
     permission_classes = [IsAuthenticated, HasSpotifyToken]
 
     def post(self, request, *args, **kwargs):
@@ -308,6 +329,7 @@ class GetRecommendations(APIView):
 
 
 class CurrentUser(APIView):
+    """"""
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):

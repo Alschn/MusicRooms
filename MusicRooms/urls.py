@@ -17,13 +17,13 @@ from django.contrib import admin
 from django.urls import path
 from django.urls.conf import include, re_path
 from django.views.generic import TemplateView
-from spotify_api.views import SpotifyLogin, GetSpotifyAccessToken, GetSpotifyAuthURL
+from spotify_api.views import SpotifyLogin, GetSpotifyAccessToken, GetSpotifyAuthURL, GetCurrentSpotifyToken
 
 urlpatterns = [
     # Django admin
     path('admin/', admin.site.urls),
 
-    # rest-framework and rest-auth
+    # rest-framework. rest-auth, all-auth
     path('api-auth/', include('rest_framework.urls')),
     path('rest-auth/', include('rest_auth.urls')),
     path('rest-auth/registration/', include('rest_auth.registration.urls')),
@@ -34,6 +34,8 @@ urlpatterns = [
     path('api/spotify-url', GetSpotifyAuthURL.as_view()),
     path('api/auth/spotify-token', GetSpotifyAccessToken.as_view()),
     path('api/auth/login', SpotifyLogin.as_view()),
+    # Spotify token used to initialize SDK
+    path('api/spotify/token', GetCurrentSpotifyToken.as_view()),
 
     # Applications
     path('spotify/', include('spotify_api.urls')),

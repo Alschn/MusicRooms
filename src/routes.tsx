@@ -1,11 +1,11 @@
 import React from "react";
 import { Route } from "react-router-dom";
-import CreateRoomPage from "./containers/CreateRoomPage";
-import HomePage from "./containers/HomePage";
-import RoomJoinPage from "./containers/JoinRoomPage";
-import SpotifyCallback from "./containers/spotify/SpotifyCallback";
-import MusicRoom from "./containers/MusicRoom";
-import WebPlayer from "./containers/spotify/WebPlayer";
+import CreateRoomPage from "./components/CreateRoomPage";
+import HomePage from "./components/HomePage";
+import RoomJoinPage from "./components/JoinRoomPage";
+import SpotifyCallback from "./components/spotify/SpotifyCallback";
+import MusicRoom from "./components/MusicRoom";
+import WebPlayer from "./components/spotify/WebPlayer";
 import Hoc from "./hoc/hoc";
 
 const BaseRouter = () => (

@@ -1,10 +1,12 @@
 import { Button, Grid, TextField, Typography } from "@material-ui/core";
 import React, { useState } from "react";
+import { useHistory } from "react-router-dom";
 import { Link } from "react-router-dom";
 import axiosClient from "../utils/axiosClient";
 import { BASE_URL } from "../utils/config";
 
-const JoinRoomPage = (props) => {
+const JoinRoomPage = () => {
+  let history = useHistory();
   const [roomCode, setRoomCode] = useState("");
   const [error, setError] = useState("");
 
@@ -16,8 +18,8 @@ const JoinRoomPage = (props) => {
     axiosClient.post(`${BASE_URL}/api/join-room`, {
       code: roomCode,
     })
-      .then((res) => {
-        props.history.push(`/rooms/${roomCode}`);
+      .then(() => {
+        history.push(`/rooms/${roomCode}`);
       })
       .catch((error) => {
         setError("Room not found");

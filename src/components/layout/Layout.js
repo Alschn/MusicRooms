@@ -2,7 +2,7 @@ import Button from "@material-ui/core/Button";
 import React from "react";
 import { connect } from "react-redux";
 import { withRouter } from "react-router-dom";
-import { logout } from "../store/actions/auth";
+import { logout } from "../../store/actions/auth";
 
 const CustomLayout = ({authenticated, logout, children}) => {
   return (
