@@ -3,14 +3,15 @@ import { Route } from "react-router-dom";
 import CreateRoomPage from "./containers/CreateRoomPage";
 import HomePage from "./containers/HomePage";
 import RoomJoinPage from "./containers/JoinRoomPage";
-import Login from "./containers/Login";
+import SpotifyCallback from "./containers/spotify/SpotifyCallback";
 import MusicRoom from "./containers/MusicRoom";
 import WebPlayer from "./containers/spotify/WebPlayer";
 import Hoc from "./hoc/hoc";
 
 const BaseRouter = () => (
   <Hoc>
-    <Route path="/login" component={Login}/>
+    <Route path="/callback" component={SpotifyCallback}/>
+
     <Route exact path="/" component={HomePage}/>
     <Route path="/join" component={RoomJoinPage}/>
     <Route path="/create" component={CreateRoomPage}/>

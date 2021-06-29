@@ -22,9 +22,9 @@ class GetRoom(APIView):
     lookup_url_kwarg = 'code'  # pass a parameter called code
 
     def get(self, request):
-        code = request.GET.get(self.lookup_url_kwarg, None)
+        code = request.GET.get(self.lookup_url_kwarg)
         user = request.user
-        if code is not None:
+        if code:
             code.rstrip()
             room = Room.objects.filter(code=code)
             if room.exists():
@@ -44,8 +44,8 @@ class JoinRoom(APIView):
 
     def post(self, request):
         user = request.user
-        code = request.data.get(self.lookup_url_kwarg, None)
-        if code is not None:
+        code = request.data.get(self.lookup_url_kwarg)
+        if code:
             room_result = Room.objects.filter(code=code)
             if room_result.exists():
                 room = room_result[0]
@@ -67,7 +67,7 @@ class CreateRoomView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CreateRoomSerializer
 
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             guest_can_pause = serializer.data.get('guest_can_pause')
@@ -104,7 +104,7 @@ class LeaveRoom(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        code = request.data.get('roomCode', None)
+        code = request.data.get('roomCode')
         if not code:
             return Response({'Error': 'Code parameter not found'}, status=status.HTTP_400_BAD_REQUEST)
         code.rstrip()

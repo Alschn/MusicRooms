@@ -1,49 +1,72 @@
-import json
 from datetime import timedelta
-from django.contrib.auth.models import User
-from .models import SpotifyToken
+
+from allauth.socialaccount.models import SocialToken
 from django.utils import timezone
 from requests import post, get, put
-from allauth.socialaccount.models import SocialToken, SocialAccount
+
+from .credentials import CLIENT_ID, CLIENT_SECRET
 
 BASE_URL = "https://api.spotify.com/v1/"
 BASE_URL_ME = "https://api.spotify.com/v1/me/"
 
 
-def get_user_tokens(user):
-    social_acc = SocialAccount.objects.filter(user=user)
-    if social_acc.exists():
-        account = social_acc[0]
-        user_tokens = SocialToken.objects.filter(account=account)
-        if user_tokens.exists():
-            return user_tokens[0].token
+def get_user_token(user):
+    user_tokens = SocialToken.objects.filter(account__user=user)
+    if user_tokens.exists():
+        return user_tokens.first()
     return None
 
 
-def update_or_create_user_tokens(session_id, access_token, token_type, expires_in, refresh_token):
-    pass
+def update_user_token(user, access_token, expires_in, refresh_token):
+    tokens = get_user_token(user)
+    if not tokens:
+        return
+    tokens.token = access_token
+    tokens.token_secret = refresh_token
+    tokens.expires_at = timezone.now() + timedelta(seconds=expires_in)
+    tokens.save(update_fields=['token', 'token_secret', 'expires_at'])
 
 
-def is_spotify_authenticated(session_id):
-    pass
+def is_spotify_authenticated(user) -> bool:
+    token = get_user_token(user)
+    if token:
+        expiry = token.expires_at
+        if expiry <= timezone.now():
+            refresh_spotify_token(user)
+        return True
+    return False
 
 
-def refresh_spotify_token(session_id):
-    pass
+def refresh_spotify_token(user):
+    refresh_token = get_user_token(user).token_secret
+
+    response = post('https://accounts.spotify.com/api/token', data={
+        'grant_type': 'refresh_token',
+        'refresh_token': refresh_token,
+        'client_id': CLIENT_ID,
+        'client_secret': CLIENT_SECRET
+    }).json()
+
+    access_token = response.get('access_token')
+    expires_in = response.get('expires_in')
+
+    update_user_token(user, access_token, expires_in, refresh_token)
 
 
 def execute_spotify_api_call(user, endpoint, post_=False, put_=False, other_base_url=None):
-    spotify_token = get_user_tokens(user)
-    headers = {'Content-Type': 'application/json', 'Authorization': "Bearer " + spotify_token}
+    spotify_token = get_user_token(user)
+    if not spotify_token:
+        return
+    headers = {'Content-Type': 'application/json', 'Authorization': "Bearer " + spotify_token.token}
 
-    URL = BASE_URL_ME if not other_base_url else other_base_url
+    url = BASE_URL_ME if not other_base_url else other_base_url
 
     if post_:
-        response = post(URL + endpoint, headers=headers)
+        response = post(url + endpoint, headers=headers)
     elif put_:
-        response = put(URL + endpoint, headers=headers)
+        response = put(url + endpoint, headers=headers)
     else:
-        response = get(URL + endpoint, {}, headers=headers)
+        response = get(url + endpoint, {}, headers=headers)
 
     # received empty object
     if not response.text:
@@ -88,4 +111,8 @@ def add_to_queue(user, uri):
 
 
 def get_recommendations(user, track_id, limit=8):
-    return execute_spotify_api_call(user, f"recommendations?seed_tracks={track_id}&limit={limit}", other_base_url=BASE_URL)
+    return execute_spotify_api_call(
+        user,
+        endpoint=f"recommendations?seed_tracks={track_id}&limit={limit}",
+        other_base_url=BASE_URL
+    )
