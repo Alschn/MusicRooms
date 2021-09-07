@@ -2,7 +2,7 @@ import { Button, Grid, TextField, Typography } from "@material-ui/core";
 import React, { useState } from "react";
 import { useHistory } from "react-router-dom";
 import { Link } from "react-router-dom";
-import axiosClient from "../utils/axiosClient";
+import axiosClient from "../api/axiosClient";
 import { BASE_URL } from "../utils/config";
 
 const JoinRoomPage = () => {

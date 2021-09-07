@@ -5,7 +5,7 @@ import Typography from '@material-ui/core/Typography';
 import React, { useCallback, useContext, useEffect, useState } from "react";
 import { useHistory, useParams } from 'react-router-dom';
 import { usePlaybackState, usePlayerDevice } from "react-spotify-web-playback-sdk";
-import axiosClient from "../utils/axiosClient";
+import axiosClient from "../api/axiosClient";
 import { BASE_URL } from "../utils/config";
 import WebSocketInstance from "../utils/websocketClient";
 import CreateRoomPage from "./CreateRoomPage";
@@ -81,25 +81,8 @@ const MusicRoom = () => {
   useEffect(() => {
     if (canJoinChat) {
       WebSocketInstance.connect(roomCode);
-      // return () => {
-      //   WebSocketInstance.disconnect();
-      // }
     }
   }, [canJoinChat, roomCode])
-
-  // useEffect(() => {
-  //   // state polling
-  //   if (isHost && sdk) {
-  //     const interval = setInterval(() => {
-  //       sdk.getCurrentState().then(state => {
-  //           WebSocketInstance.sendMessage({...state, command: "get_current_song"});
-  //           console.log("Sent state");
-  //         }
-  //       ).catch();
-  //     }, 5000)
-  //     return () => clearInterval(interval);
-  //   }
-  // }, [isHost, sdk])
 
   const addMessage = (newMessage) => {
     setMessages(messages => [...messages, newMessage]);
@@ -168,6 +151,15 @@ const MusicRoom = () => {
       </Grid>
     );
   }
+
+  useEffect(() => {
+    if (isHost && playbackState !== null) {
+      const interval = setInterval(() => {
+        WebSocketInstance.sendMessage({...playbackState, command: "get_current_song"});
+      }, 5000)
+      return () => clearInterval(interval);
+    }
+  }, [playbackState])
 
   /* Temporary methods for development: */
   const HostSendsCurrentSong = () => {

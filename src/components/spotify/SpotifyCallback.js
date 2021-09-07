@@ -3,7 +3,7 @@ import { connect } from "react-redux";
 import { Redirect, useLocation } from "react-router-dom";
 import 'react-spotify-auth/dist/index.css';
 import { authSpotifyLogin } from "../../store/actions/auth";
-import axiosClient from "../../utils/axiosClient";
+import axiosClient from "../../api/axiosClient";
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);

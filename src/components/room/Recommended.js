@@ -1,7 +1,7 @@
 import { Paper } from "@material-ui/core";
 import Grid from "@material-ui/core/Grid";
 import React, { useEffect, useState } from "react";
-import axiosClient from "../../utils/axiosClient";
+import axiosClient from "../../api/axiosClient";
 import { BASE_URL } from "../../utils/config";
 import "./recommended.scss";
 

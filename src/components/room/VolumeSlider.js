@@ -7,7 +7,7 @@ import VolumeDown from "@material-ui/icons/VolumeDown";
 import VolumeUp from "@material-ui/icons/VolumeUp";
 import React, { useEffect, useState } from "react";
 import { BASE_URL } from "../../utils/config";
-import axiosClient from "../../utils/axiosClient";
+import axiosClient from "../../api/axiosClient";
 
 const useStyles = makeStyles({
   root: {

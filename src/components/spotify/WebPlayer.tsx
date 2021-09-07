@@ -1,5 +1,5 @@
 import React, {createContext, FC, ReactNode, useCallback} from "react";
-import axiosClient from "../../utils/axiosClient";
+import axiosClient from "../../api/axiosClient";
 import {WebPlaybackSDK} from "react-spotify-web-playback-sdk";
 
 const INITIAL_VOLUME = 0.3;

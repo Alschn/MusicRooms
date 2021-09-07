@@ -3,7 +3,7 @@ import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
 import TextField from "@material-ui/core/TextField";
 import React, { useRef, useState } from "react";
-import axiosClient from "../../utils/axiosClient";
+import axiosClient from "../../api/axiosClient";
 import { BASE_URL } from "../../utils/config";
 import { getArtistsString } from "../utilities";
 import Queue from "./Queue";

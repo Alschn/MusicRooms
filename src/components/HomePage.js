@@ -4,7 +4,7 @@ import { connect } from "react-redux";
 import { Scopes, SpotifyAuth } from "react-spotify-auth";
 import 'react-spotify-auth/dist/index.css';
 import { authSpotifyLogin } from "../store/actions/auth";
-import axiosClient from "../utils/axiosClient";
+import axiosClient from "../api/axiosClient";
 import { BASE_URL, CLIENT_ID, REDIRECT_URI } from "../utils/config"
 import SpotifyLogin from "./spotify/SpotifyButton";
 

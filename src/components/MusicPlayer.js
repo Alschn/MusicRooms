@@ -5,7 +5,7 @@ import SkipNextIcon from "@material-ui/icons/SkipNext";
 import SkipPreviousIcon from '@material-ui/icons/SkipPrevious';
 import React from "react";
 import { usePlaybackState } from "react-spotify-web-playback-sdk";
-import axiosClient from "../utils/axiosClient";
+import axiosClient from "../api/axiosClient";
 import { BASE_URL } from "../utils/config";
 import VolumeSlider from "./room/VolumeSlider";
 import { getArtistsString } from "./utilities";
